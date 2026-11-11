@@ -1,0 +1,42 @@
+name: Nightly Benchmark & Eval Update
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  eval:
+    name: Run pdf2markit vs anydoc benchmark
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install benchmark competitors (@firecrawl/anydoc, pymupdf4llm, markitdown)
+        run: |
+          npm install --no-save @firecrawl/anydoc
+          pip3 install --quiet --break-system-packages pymupdf4llm markitdown || true
+
+      - name: Run benchmark & update README
+        run: node scripts/run-eval.mjs
+
+      - name: Commit & push updated eval numbers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet README.md bench/latest.json; then
+            echo "No benchmark changes to commit."
+          else
+            git add README.md bench/latest.json
+            git commit -m "chore(bench): update nightly pdf2markit vs anydoc eval numbers"
+            git push origin HEAD:main
+          fi
