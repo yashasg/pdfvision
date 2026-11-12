@@ -1,0 +1,36 @@
+included:
+  - Package.swift
+  - Dangerfile.swift
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+
+strict: true
+
+disabled_rules:
+  - trailing_comma
+
+cyclomatic_complexity:
+  warning: 20
+  error: 25
+
+function_body_length:
+  warning: 90
+  error: 120
+
+identifier_name:
+  min_length: 2
+
+large_tuple:
+  warning: 3
+  error: 4
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+reporter: xcode

@@ -1,0 +1,6 @@
+retain_public: true
+retain_encodable_properties: true
+strict: true
+relative_results: true
+disable_update_check: true
+format: xcode

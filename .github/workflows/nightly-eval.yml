@@ -1,4 +1,4 @@
-name: Nightly Benchmark & Eval Update
+name: Digital PDF Benchmark
 
 on:
   schedule:
@@ -6,12 +6,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   eval:
-    name: Run pdf2markit vs anydoc benchmark
+    name: Compare digital PDFs
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,22 +22,40 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install benchmark competitors (@firecrawl/anydoc, pymupdf4llm, markitdown)
-        run: |
-          npm install --no-save @firecrawl/anydoc
-          pip3 install --quiet --break-system-packages pymupdf4llm markitdown || true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Run benchmark & update README
+      - name: Install benchmark competitors on the runner
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pdfvision-eval-tools" --no-save @firecrawl/anydoc@0.2.4
+          python3 -m venv "$RUNNER_TEMP/pdfvision-eval-python"
+          "$RUNNER_TEMP/pdfvision-eval-python/bin/python" -m pip install --quiet 'markitdown[pdf]==0.1.9'
+          echo "ANYDOC_MODULE_DIR=$RUNNER_TEMP/pdfvision-eval-tools/node_modules/@firecrawl/anydoc" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/pdfvision-eval-python/bin" >> "$GITHUB_PATH"
+
+      - name: Check evaluation setup
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_setup_eval_corpus.py'
+          node --test scripts/eval-metrics.test.mjs
+
+      - name: Download and prepare the digital corpus on the runner
+        run: |
+          python3 scripts/setup-eval-corpus.py "$RUNNER_TEMP/pdfvision-eval-corpus"
+          echo "PDFVISION_EVAL_CORPUS_MANIFEST=$RUNNER_TEMP/pdfvision-eval-corpus/manifest.json" >> "$GITHUB_ENV"
+
+      - name: Run the digital-only comparison
         run: node scripts/run-eval.mjs
 
-      - name: Commit & push updated eval numbers
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet README.md bench/latest.json; then
-            echo "No benchmark changes to commit."
-          else
-            git add README.md bench/latest.json
-            git commit -m "chore(bench): update nightly pdf2markit vs anydoc eval numbers"
-            git push origin HEAD:main
-          fi
+      - name: Upload benchmark reports for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digital-pdf-benchmark
+          path: |
+            bench/latest.json
+            bench/external-latest.json
+            README.md
+          if-no-files-found: warn
+          retention-days: 14

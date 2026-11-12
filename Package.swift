@@ -2,21 +2,30 @@
 import PackageDescription
 
 let package = Package(
-    name: "pdf2markit",
+    name: "pdfvision",
     platforms: [
         .macOS(.v14),
     ],
     products: [
         .library(name: "PDFMarkdown", targets: ["PDFMarkdown"]),
-        .executable(name: "pdf2markit", targets: ["pdf2markit"]),
+        .executable(name: "pdfvision", targets: ["pdfvision"]),
+    ],
+    dependencies: [
+        // Newer releases require Swift 6.2; keep Swift 6.0 compatibility.
+        .package(url: "https://github.com/swiftlang/swift-markdown.git", exact: "0.7.1"),
     ],
     targets: [
-        .target(name: "PDFMarkdown"),
+        .target(
+            name: "PDFMarkdown",
+            dependencies: [.product(name: "Markdown", package: "swift-markdown")]
+        ),
         .executableTarget(
-            name: "pdf2markit",
-            dependencies: ["PDFMarkdown"]),
+            name: "pdfvision",
+            dependencies: ["PDFMarkdown"]
+        ),
         .testTarget(
             name: "PDFMarkdownTests",
-            dependencies: ["PDFMarkdown"]),
+            dependencies: ["PDFMarkdown"]
+        ),
     ]
 )

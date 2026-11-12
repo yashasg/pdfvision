@@ -1,0 +1,792 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "samples": {
+      "repository": "py-pdf/sample-files",
+      "revision": "80d67b91f3e28909756ca7807bbe8f43b599d12f",
+      "attribution": "py-pdf/sample-files contributors",
+      "license": "CC-BY-SA-4.0",
+      "licenseEvidence": "README.md"
+    },
+    "ocrmypdf": {
+      "repository": "ocrmypdf/OCRmyPDF",
+      "revision": "3343116ba204c99c9fee762d538dc1b668711bfb",
+      "attribution": "See the per-file copyright holders in REUSE.toml and original sources in tests/resources/README.rst",
+      "licenseEvidence": "REUSE.toml"
+    },
+    "qpdf": {
+      "repository": "qpdf/qpdf",
+      "revision": "4eba95899886e851cc41d76886483b347612f2a8",
+      "attribution": "Jay Berkenbilt, Manfred Holger, and qpdf contributors; see NOTICE.md",
+      "license": "Apache-2.0",
+      "licenseEvidence": "NOTICE.md"
+    },
+    "verapdf": {
+      "repository": "veraPDF/veraPDF-corpus",
+      "revision": "bb75f4f0073d9350dfd058c0162a367e6fadf25e",
+      "attribution": "veraPDF consortium and veraPDF-corpus contributors",
+      "license": "CC-BY-4.0",
+      "licenseEvidence": "README.md"
+    }
+  },
+  "documents": [
+    {
+      "id": "latex-simple",
+      "source": "samples",
+      "path": "001-trivial/minimal-document.pdf",
+      "tags": [
+        "digital",
+        "latex"
+      ],
+      "expect": "text",
+      "bytes": 16978,
+      "sha256": "f723638db6e763cf4ccadad38a3d38a02d9ecab95dab1f0bbf00e801991b5f92"
+    },
+    {
+      "id": "libreoffice-text",
+      "source": "samples",
+      "path": "002-trivial-libre-office-writer/002-trivial-libre-office-writer.pdf",
+      "tags": [
+        "digital",
+        "libreoffice"
+      ],
+      "expect": "text",
+      "bytes": 12609,
+      "sha256": "fc67ce4f76ffb44e818ebe4f673dbeb6002ad93a59f3856ff14fb1d3625f10a5"
+    },
+    {
+      "id": "latex-image",
+      "source": "samples",
+      "path": "003-pdflatex-image/pdflatex-image.pdf",
+      "tags": [
+        "digital",
+        "images",
+        "latex"
+      ],
+      "expect": "text",
+      "bytes": 74061,
+      "sha256": "64c5bc35008015936ef3ff60f6ad268a713b5271727b72ef308f87b9b495646f"
+    },
+    {
+      "id": "latex-multipage",
+      "source": "samples",
+      "path": "004-pdflatex-4-pages/pdflatex-4-pages.pdf",
+      "tags": [
+        "digital",
+        "multipage"
+      ],
+      "expect": "text",
+      "bytes": 24607,
+      "sha256": "f17a09190ad8a04964d78115d8ba7fc7a298557274fa14932ba58612342b7dec"
+    },
+    {
+      "id": "password-protected",
+      "source": "samples",
+      "path": "005-libreoffice-writer-password/libreoffice-writer-password.pdf",
+      "tags": [
+        "encrypted",
+        "password"
+      ],
+      "expect": "encrypted",
+      "bytes": 12783,
+      "sha256": "3e333bff0196d0c5320f40cdd1b7a3abd21b316de79de3c0f9083accdaef9358"
+    },
+    {
+      "id": "latex-outlines",
+      "source": "samples",
+      "path": "006-pdflatex-outline/pdflatex-outline.pdf",
+      "tags": [
+        "digital",
+        "outlines",
+        "internal-links"
+      ],
+      "expect": "text",
+      "bytes": 48722,
+      "sha256": "17b5a4dac75613b82749c7538fc93991a385a5d419cc9832fdba24c1726a031a"
+    },
+    {
+      "id": "inline-image",
+      "source": "samples",
+      "path": "008-reportlab-inline-image/inline-image.pdf",
+      "tags": [
+        "inline-images",
+        "reportlab"
+      ],
+      "expect": "text",
+      "bytes": 1537,
+      "sha256": "db5c34fea270f38b152d8476e6f3bba855460958e957f69a0542002538cac1c2"
+    },
+    {
+      "id": "geotopology-book",
+      "source": "samples",
+      "path": "009-pdflatex-geotopo/GeoTopo-komprimiert.pdf",
+      "tags": [
+        "digital",
+        "long-document",
+        "math",
+        "german",
+        "diagrams"
+      ],
+      "expect": "text",
+      "bytes": 1793479,
+      "sha256": "20430e92d42bc06c606f5889d9832c8e5c4dde17f8333f99fbcba96b3a0cba14"
+    },
+    {
+      "id": "latex-form",
+      "source": "samples",
+      "path": "010-pdflatex-forms/pdflatex-forms.pdf",
+      "tags": [
+        "digital",
+        "acroform",
+        "widgets"
+      ],
+      "expect": "text",
+      "bytes": 27712,
+      "sha256": "fc6265298caafffeee9dd2d7f3ae2e53ab9f61ec0561369429d442f731d339da"
+    },
+    {
+      "id": "google-docs",
+      "source": "samples",
+      "path": "011-google-doc-document/google-doc-document.pdf",
+      "tags": [
+        "digital",
+        "google-docs",
+        "images"
+      ],
+      "expect": "text",
+      "bytes": 80100,
+      "sha256": "69f6b7f493b1bc55d518942976cbeadc4ec0a36f6d8a6dc24feffc516d35b2c9"
+    },
+    {
+      "id": "libreoffice-form",
+      "source": "samples",
+      "path": "012-libreoffice-form/libreoffice-form.pdf",
+      "tags": [
+        "digital",
+        "acroform",
+        "widgets"
+      ],
+      "expect": "text",
+      "bytes": 34186,
+      "sha256": "9105eeef8c8cafdb141b7edd768a5e08adffe320d1d4f89e1a7112a2b37d1c57"
+    },
+    {
+      "id": "reportlab-overlay",
+      "source": "samples",
+      "path": "013-reportlab-overlay/reportlab-overlay.pdf",
+      "tags": [
+        "digital",
+        "overlay",
+        "reportlab"
+      ],
+      "expect": "text",
+      "bytes": 13790,
+      "sha256": "fdbdd49a118053577240850826a7eff6ac4ce7288527bf4c483714f0113860ed"
+    },
+    {
+      "id": "arabic-rtl",
+      "source": "samples",
+      "path": "015-arabic/habibi.pdf",
+      "tags": [
+        "digital",
+        "arabic",
+        "rtl",
+        "unicode"
+      ],
+      "expect": "text",
+      "bytes": 14957,
+      "sha256": "1017c4559eb7d0ccf7d151a3f051c8c1da27a7c1dc8050b2b687e3d3228e1b6f"
+    },
+    {
+      "id": "arabic-rotated",
+      "source": "samples",
+      "path": "015-arabic/habibi-rotated.pdf",
+      "tags": [
+        "digital",
+        "arabic",
+        "rtl",
+        "rotation"
+      ],
+      "expect": "text",
+      "bytes": 15860,
+      "sha256": "56329f1e3cff5358f1f2aadcfac03467cce51b36b2e2daab9c14cef26f7ea536"
+    },
+    {
+      "id": "arabic-cmap",
+      "source": "samples",
+      "path": "015-arabic/habibi-oneline-cmap.pdf",
+      "tags": [
+        "digital",
+        "arabic",
+        "rtl",
+        "cmap"
+      ],
+      "expect": "text",
+      "bytes": 14957,
+      "sha256": "31b50622a8623723188bbb69385881c70ca8bedaa5099a19392c0d0afcccd8ee"
+    },
+    {
+      "id": "external-link",
+      "source": "samples",
+      "path": "016-libre-office-link/libre-office-link.pdf",
+      "tags": [
+        "digital",
+        "external-links"
+      ],
+      "expect": "text",
+      "bytes": 9473,
+      "sha256": "bc38b458acd125c09fb7603cf0cca5d8737eea9fe353c2aef2c42b3db9cf9076"
+    },
+    {
+      "id": "grayscale-image",
+      "source": "samples",
+      "path": "019-grayscale-image/grayscale-image.pdf",
+      "tags": [
+        "image-only",
+        "grayscale"
+      ],
+      "expect": "no-text",
+      "bytes": 40115,
+      "sha256": "3adfd74b88cebcdd46c83f9b1d86b6995700233126b53e2f1fcacb40eab2dc84"
+    },
+    {
+      "id": "html-print",
+      "source": "samples",
+      "path": "022-pdfkit/pdfkit.pdf",
+      "tags": [
+        "digital",
+        "html-print"
+      ],
+      "expect": "text",
+      "bytes": 14404,
+      "sha256": "8820ba44cd62264fd561e921aacc214cee7ba76723f525d591cdb2104a87f0dd"
+    },
+    {
+      "id": "annotations",
+      "source": "samples",
+      "path": "024-annotations/annotated_pdf.pdf",
+      "tags": [
+        "digital",
+        "annotations",
+        "highlight",
+        "ink"
+      ],
+      "expect": "text",
+      "bytes": 1833,
+      "sha256": "c327f921abfba23a5c42d5c429ba99ded1cf5511521003aba6d2aff9c940d9cc"
+    },
+    {
+      "id": "attachment",
+      "source": "samples",
+      "path": "025-attachment/with-attachment.pdf",
+      "tags": [
+        "digital",
+        "attachments"
+      ],
+      "expect": "text",
+      "bytes": 24296,
+      "sha256": "1c7e5f3bb3bbf9a2424cac84f46b17e5b62af0719d63b445c280c76634b316ba"
+    },
+    {
+      "id": "multicolumn",
+      "source": "samples",
+      "path": "026-latex-multicolumn/multicolumn.pdf",
+      "tags": [
+        "digital",
+        "multicolumn",
+        "reading-order"
+      ],
+      "expect": "text",
+      "bytes": 78657,
+      "sha256": "bdb495e95b3e1afae95013099dc59b0cea047f1fa70f677ee9cb33f10faa1c6c"
+    },
+    {
+      "id": "cropped-rotated-scaled",
+      "source": "samples",
+      "path": "027-cropped-rotated-scaled/cropped-rotated-scaled.pdf",
+      "tags": [
+        "digital",
+        "cropbox",
+        "rotation",
+        "scaling",
+        "annotations"
+      ],
+      "expect": "text",
+      "bytes": 272039,
+      "sha256": "cc195eac510b81123de4f55ac9f8185f2120975a7b75a106460b98615737aacd"
+    },
+    {
+      "id": "optional-layers",
+      "source": "samples",
+      "path": "029-optional-content-groups/ocg_map_test.pdf",
+      "tags": [
+        "optional-content",
+        "layers",
+        "maps"
+      ],
+      "expect": "text",
+      "bytes": 313834,
+      "sha256": "0d2b6fbcc9e58bda84d4f910d63499451b1825841572ef35616e24ab27f20182"
+    },
+    {
+      "id": "tagged-pdf20",
+      "source": "samples",
+      "path": "030-tagged-pdf/tagged.pdf",
+      "tags": [
+        "digital",
+        "pdf-2.0",
+        "tagged",
+        "structure-tree",
+        "artifacts"
+      ],
+      "expect": "text",
+      "bytes": 6712,
+      "sha256": "20fed4503acd72cc1646b1214f24a6b56b579199eb30e2351e0578c3dc324c79"
+    },
+    {
+      "id": "png-low-bit-depth",
+      "source": "samples",
+      "path": "032-png-predictors-low-bit-depth/png-predictors-low-bit-depth.pdf",
+      "tags": [
+        "images",
+        "png-predictors",
+        "low-bit-depth"
+      ],
+      "expect": "text",
+      "bytes": 24700,
+      "sha256": "5dacb4b1beba265db831852dd3013ea29b39f04cb1ff6a8810b574692c16ef90"
+    },
+    {
+      "id": "scan-huckleberry",
+      "source": "ocrmypdf",
+      "path": "tests/resources/c03-29.pdf",
+      "license": "public-domain",
+      "tags": [
+        "scanned",
+        "ocr",
+        "historical",
+        "illustrations"
+      ],
+      "expect": "text",
+      "bytes": 167938,
+      "sha256": "c2ff83af7d028c95209cc7eebdf80fd5bb4cd292973ed6601e4bab7d1929f201"
+    },
+    {
+      "id": "scan-french",
+      "source": "ocrmypdf",
+      "path": "tests/resources/francais.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "french",
+        "diacritics"
+      ],
+      "expect": "text",
+      "bytes": 483256,
+      "sha256": "600c27f8dd2ef085a94d3500f6ccdb3b37f4b89aa8ffdf9a00a06a1367887e8b"
+    },
+    {
+      "id": "scan-skewed",
+      "source": "ocrmypdf",
+      "path": "tests/resources/skew.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "skew",
+        "multicolumn"
+      ],
+      "expect": "text",
+      "bytes": 76013,
+      "sha256": "6be6b54d49df71351974774404e299b756d8d3cbeb2c4a31f15fae8dd983d72f"
+    },
+    {
+      "id": "scan-rotated-skewed",
+      "source": "ocrmypdf",
+      "path": "tests/resources/rotated_skew.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "skew",
+        "rotation"
+      ],
+      "expect": "text",
+      "bytes": 76401,
+      "sha256": "5122c07d05a61219eb9f8305776ef16def6b34c29358e05c5ae2e884a351438f"
+    },
+    {
+      "id": "scan-ccitt",
+      "source": "ocrmypdf",
+      "path": "tests/resources/ccitt.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "ccitt"
+      ],
+      "expect": "text",
+      "bytes": 103856,
+      "sha256": "5f4b129bf0eb0d32358a917cd1754c6fd68cac589ad79076b6d0191ebe84f0f1"
+    },
+    {
+      "id": "scan-jbig2",
+      "source": "ocrmypdf",
+      "path": "tests/resources/jbig2.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "jbig2"
+      ],
+      "expect": "text",
+      "bytes": 42818,
+      "sha256": "210b845b62eab7118bc1e6076a3235a37eb947218254198c6102d06422f35037"
+    },
+    {
+      "id": "scan-chart",
+      "source": "ocrmypdf",
+      "path": "tests/resources/graph.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "scanned",
+        "ocr",
+        "charts",
+        "slanted-text"
+      ],
+      "expect": "text",
+      "bytes": 48285,
+      "sha256": "11fa2cef6845341795dc4103e68b31df5ff4fc72a7b7fa42904eb22b9bd70613"
+    },
+    {
+      "id": "searchable-scan",
+      "source": "ocrmypdf",
+      "path": "tests/resources/graph_ocred.pdf",
+      "license": "CC-BY-SA-3.0",
+      "tags": [
+        "searchable-scan",
+        "text-layer",
+        "charts"
+      ],
+      "expect": "text",
+      "bytes": 37654,
+      "sha256": "36784b0f8a37f124c7015a68c53d732b07519c30aa1b333e7ec1ba8a69cb6120"
+    },
+    {
+      "id": "vector-text",
+      "source": "ocrmypdf",
+      "path": "tests/resources/vector.pdf",
+      "license": "MIT",
+      "tags": [
+        "vector",
+        "outlined-text",
+        "ocr"
+      ],
+      "expect": "text",
+      "bytes": 38923,
+      "sha256": "f530547f86ca3884ef8e2e3cde686ca04c3a587b09d529a9d74817e77192cbb7"
+    },
+    {
+      "id": "invalid-header-only",
+      "source": "ocrmypdf",
+      "path": "tests/resources/invalid.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "malformed",
+        "truncated"
+      ],
+      "expect": "malformed",
+      "bytes": 44,
+      "sha256": "60abfda66889f7ea7721f5b25bf5c189440a988411cb5363c0f616c800f1d889"
+    },
+    {
+      "id": "blank-no-contents",
+      "source": "ocrmypdf",
+      "path": "tests/resources/no_contents.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "blank",
+        "missing-contents"
+      ],
+      "expect": "no-text",
+      "bytes": 431,
+      "sha256": "3f5e938c8ec11b5679e22d7bfebc590fe3927bac3ae40ce8ff26b0e552818d5a"
+    },
+    {
+      "id": "minimal-blank",
+      "source": "ocrmypdf",
+      "path": "tests/resources/trivial.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "blank",
+        "pdf-1.3"
+      ],
+      "expect": "no-text",
+      "bytes": 515,
+      "sha256": "a934a5224754141f1413c9fff2b37c185388ea366ef16c79511c35c61c3d12ff"
+    },
+    {
+      "id": "truetype-no-unicode",
+      "source": "ocrmypdf",
+      "path": "tests/resources/truetype_font_nomapping.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "fonts",
+        "truetype",
+        "missing-unicode-map"
+      ],
+      "expect": "text",
+      "bytes": 7742,
+      "sha256": "d8180979c6ab72d74407360e3b780dacc09e78bcca4af2c15b4857e62bdb0314"
+    },
+    {
+      "id": "type3-no-unicode",
+      "source": "ocrmypdf",
+      "path": "tests/resources/type3_font_nomapping.pdf",
+      "license": "CC-BY-SA-4.0",
+      "tags": [
+        "fonts",
+        "type3",
+        "missing-unicode-map"
+      ],
+      "expect": "text",
+      "note": "Two tiny visible Type 3 glyphs with no Unicode mapping; currently a known extraction gap, not an expected rejection.",
+      "bytes": 3967,
+      "sha256": "91245f5634cde1663b2c08efc0e209d5202d661af1effbd1692a1dbf458a7de5"
+    },
+    {
+      "id": "scan-multipage",
+      "source": "ocrmypdf",
+      "path": "tests/resources/multipage.pdf",
+      "license": "public-domain",
+      "tags": [
+        "scanned",
+        "ocr",
+        "multipage"
+      ],
+      "expect": "text",
+      "bytes": 1120291,
+      "sha256": "07987c44650938fa8dcf08c0937691712fdd800669b4607c2c7e3fee21cb1f80"
+    },
+    {
+      "id": "linearized",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/c-linearized.pdf",
+      "tags": [
+        "digital",
+        "linearized"
+      ],
+      "expect": "text",
+      "bytes": 11325,
+      "sha256": "135cee6bd018c06d40c8c46c4a0230b2799adb90f502e214a347b3855039a24e"
+    },
+    {
+      "id": "object-streams",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/c-object-streams.pdf",
+      "tags": [
+        "digital",
+        "object-streams",
+        "xref-stream"
+      ],
+      "expect": "text",
+      "bytes": 5195,
+      "sha256": "0588a730f7b499b2245e826fcba3df9131f698062e774ae2a4fce2db1d67cf0a"
+    },
+    {
+      "id": "hybrid-xref",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/hybrid-xref.pdf",
+      "tags": [
+        "digital",
+        "hybrid-xref"
+      ],
+      "expect": "text",
+      "bytes": 16902,
+      "sha256": "df1ae8b9cb2378aaeda6fdc11146dd37328737fd050941390d2c6bd188eea0e4"
+    },
+    {
+      "id": "damaged-xref",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/bad-xref.pdf",
+      "tags": [
+        "damaged",
+        "xref-recovery"
+      ],
+      "expect": "text",
+      "bytes": 819,
+      "sha256": "5895dfedf978f600b12e29643617dbb111869b60526d957878e349571e1467d1"
+    },
+    {
+      "id": "zero-pages",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/empty.pdf",
+      "tags": [
+        "empty",
+        "zero-pages"
+      ],
+      "expect": "empty",
+      "note": "PDFKit may reject the zero-page page tree at initialization (malformed) or expose an empty document; either rejection is valid.",
+      "bytes": 315,
+      "sha256": "b61f62584fed965e7b7e8cfe79b1aa914106fb3714c8e3928a8f57c1e7e0d19a"
+    },
+    {
+      "id": "encrypted-rc4",
+      "source": "qpdf",
+      "path": "qpdf/qtest/qpdf/encrypted-40-bit-R3.pdf",
+      "tags": [
+        "encrypted",
+        "rc4"
+      ],
+      "expect": "encrypted",
+      "bytes": 1041,
+      "sha256": "221b17165d2c807500165c7890f6f8f355b6cf62ecdb430d9bae71cec17b8369"
+    },
+    {
+      "id": "pdfa-1b",
+      "source": "verapdf",
+      "path": "PDF_A-1b/6.1 File structure/6.1.2 File header/veraPDF test suite 6-1-2-t01-pass-a.pdf",
+      "tags": [
+        "graphics-only",
+        "pdfa-1b-tests",
+        "standards-edge-case"
+      ],
+      "expect": "no-text",
+      "note": "A colored square, not a text document. Atomic conformance test names do not certify whole-file PDF/A compliance.",
+      "bytes": 4048,
+      "sha256": "66077f449d472a048e3bbf7192aa6d2b0b0ebd6b6d8a6f878f776f69424b6deb"
+    },
+    {
+      "id": "pdfa-4",
+      "source": "verapdf",
+      "path": "PDF_A-4/6.1 File structure/6.1.2 File header/veraPDF test suite 6-1-2-t01-pass-a.pdf",
+      "tags": [
+        "graphics-only",
+        "pdfa-4-tests",
+        "unusual-version",
+        "standards-edge-case"
+      ],
+      "expect": "no-text",
+      "note": "A colored square with a PDF-2.9 header, testing the PDF/A header rule rather than claiming a standard PDF version.",
+      "bytes": 3251,
+      "sha256": "97814be08003c207e1bed44fc49df78afa460660e82708bd17ca26b626a6e4ec"
+    },
+    {
+      "id": "pdfa-3-attachment",
+      "source": "verapdf",
+      "path": "PDF_A-3b/6.8 Embedded files/veraPDF test suite 6-8-t02-pass-e.pdf",
+      "tags": [
+        "digital",
+        "pdfa-3b",
+        "attachments",
+        "archival"
+      ],
+      "expect": "text",
+      "bytes": 26052,
+      "sha256": "0d5ec648a2b3f9acd6fe8399aa9edf7bffb200dbfa1fd63ff85ae6c86c16a94c"
+    },
+    {
+      "id": "pdfua-table",
+      "source": "verapdf",
+      "path": "PDF_UA-1/7.5 Tables/7.5-t01-pass-a.pdf",
+      "tags": [
+        "digital",
+        "pdfua-1",
+        "tagged",
+        "tables",
+        "accessibility"
+      ],
+      "expect": "text",
+      "bytes": 37174,
+      "sha256": "d91d6aeb4203b6852a20aebbb2d1399f72ad5527e7056a2577168a2fde60eb4f"
+    },
+    {
+      "id": "pdfua-table-variant",
+      "source": "verapdf",
+      "path": "PDF_UA-1/7.5 Tables/7.5-t01-pass-c.pdf",
+      "tags": [
+        "digital",
+        "pdfua-1",
+        "tagged",
+        "tables",
+        "accessibility"
+      ],
+      "expect": "text",
+      "bytes": 37338,
+      "sha256": "f486ba801ecbde6a96cf1055f6c9dc8e28fc488eb28275440c5f6987f35b874b"
+    }
+  ],
+  "notices": [
+    {
+      "id": "samples-readme",
+      "source": "samples",
+      "path": "README.md",
+      "bytes": 420,
+      "sha256": "1a7127c5de10cd6f46a1fdf82b3cdc2c1d310ee7c5ee2a552ff571cf96ff10e4"
+    },
+    {
+      "id": "samples-license",
+      "source": "samples",
+      "path": "LICENSE",
+      "bytes": 20137,
+      "sha256": "23ee78c8bae49cf08ea2f0c84945c66b987ebe4520881fb51b3dad4fb43d07c2"
+    },
+    {
+      "id": "ocrmypdf-attribution",
+      "source": "ocrmypdf",
+      "path": "REUSE.toml",
+      "bytes": 6167,
+      "sha256": "1cd7fc8fe5201280287d92b02ee4b9a7b14991ae4629389c9253f8d4513a76ad"
+    },
+    {
+      "id": "ocrmypdf-resources",
+      "source": "ocrmypdf",
+      "path": "tests/resources/README.rst",
+      "bytes": 6117,
+      "sha256": "6bdb93f6e44036a3cce7f2166b8a30bf825b18a9a14581ebb0d22dbd4418ca9b"
+    },
+    {
+      "id": "ocrmypdf-cc-by-sa-3",
+      "source": "ocrmypdf",
+      "path": "LICENSES/CC-BY-SA-3.0.txt",
+      "bytes": 21305,
+      "sha256": "6e0809a0e41238e84434367205818cd8f48869ba2e6b973f3db43efac7a79735"
+    },
+    {
+      "id": "ocrmypdf-cc-by-sa-4",
+      "source": "ocrmypdf",
+      "path": "LICENSES/CC-BY-SA-4.0.txt",
+      "bytes": 18375,
+      "sha256": "cde7883b9050a1104f4ac19a1572aafd6e5d7323b68351aaf51fbf4beba54966"
+    },
+    {
+      "id": "ocrmypdf-mit",
+      "source": "ocrmypdf",
+      "path": "LICENSES/MIT.txt",
+      "bytes": 1078,
+      "sha256": "b85dcd3e453d05982552c52b5fc9e0bdd6d23c6f8e844b984a88af32570b0cc0"
+    },
+    {
+      "id": "qpdf-license",
+      "source": "qpdf",
+      "path": "LICENSE.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "id": "qpdf-notice",
+      "source": "qpdf",
+      "path": "NOTICE.md",
+      "bytes": 2729,
+      "sha256": "b207f65a9e5491195ded63b2941199b19a4d30148871f2742c88eae7bfc513a6"
+    },
+    {
+      "id": "verapdf-license",
+      "source": "verapdf",
+      "path": "README.md",
+      "bytes": 973,
+      "sha256": "acefbacff2886458084e4514b2bc1abd52217e69549161a6118a0a87497d3646"
+    }
+  ]
+}

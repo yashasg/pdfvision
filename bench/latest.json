@@ -1,57 +1,8 @@
 {
-  "updatedAt": "2026-11-11T12:07:02.139Z",
-  "runner": "Apple M1 (Virtual)",
-  "summary": {
-    "pdf2markit": {
-      "typesCovered": "4/4",
-      "supportedCount": 4,
-      "medianMs": 2.200833,
-      "docsJudged": 100,
-      "score": 98,
-      "completeness": 96,
-      "structure": 100,
-      "formatting": 97,
-      "cleanliness": 100,
-      "byCategory": {
-        "digital-single": 100,
-        "digital-2col": 97,
-        "digital-links": 96,
-        "scanned-ocr": 100
-      }
-    },
-    "anydoc": {
-      "typesCovered": "3/4",
-      "supportedCount": 3,
-      "medianMs": 0.9911250000004657,
-      "docsJudged": 75,
-      "score": 61,
-      "completeness": 84,
-      "structure": 21,
-      "formatting": 55,
-      "cleanliness": 87,
-      "byCategory": {
-        "digital-single": 71,
-        "digital-2col": 67,
-        "digital-links": 46,
-        "scanned-ocr": null
-      }
-    },
-    "markitdown": {
-      "typesCovered": "3/4",
-      "supportedCount": 3,
-      "medianMs": 7.299582999991117,
-      "docsJudged": 75,
-      "score": 64,
-      "completeness": 90,
-      "structure": 0,
-      "formatting": 67,
-      "cleanliness": 100,
-      "byCategory": {
-        "digital-single": 75,
-        "digital-2col": 72,
-        "digital-links": 45,
-        "scanned-ocr": null
-      }
-    }
-  }
+  "status": "pending",
+  "scope": "digital-only",
+  "reason": "Awaiting a GitHub benchmark run; previous mixed digital/OCR measurements are not reused.",
+  "syntheticDocuments": 75,
+  "categories": ["digital-single", "digital-2col", "digital-links"],
+  "summary": {}
 }

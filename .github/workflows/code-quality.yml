@@ -1,0 +1,75 @@
+name: Code Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Swift, Node, and Danger checks
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Install Mint
+        run: |
+          mkdir -p .build
+          git clone --filter=blob:none https://github.com/yonaskolb/Mint.git .build/mint
+          git -C .build/mint checkout 7bc67a0b925b949c8becc327bc08f56eeadc0051
+          swift build --package-path .build/mint --configuration release --product mint
+          echo "$PWD/.build/mint/.build/release" >> "$GITHUB_PATH"
+
+      - name: Check formatting
+        run: mint run SwiftFormat --lint Package.swift Dangerfile.swift Sources Tests
+
+      - name: Run SwiftLint
+        run: mint run SwiftLint lint
+
+      - name: Run Swift tests
+        run: swift test
+
+      - name: Check unused Swift code
+        run: make unused
+
+      - name: Run corpus and CLI tests
+        run: node --test scripts/*.test.mjs
+
+      - name: Run offline evaluation setup tests
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Install Danger JS
+        if: github.event_name == 'pull_request'
+        run: npm install --global danger@14.1.0
+
+      - name: Run Danger
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mint run danger/swift danger-swift ci --failOnErrors --no-publish-check
+
+      - name: Run Danger without publishing for fork
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name != github.repository
+        env:
+          DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mint run danger/swift danger-swift ci --text-only --failOnErrors --no-publish-check

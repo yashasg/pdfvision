@@ -77,8 +77,8 @@ public enum PDFMarkdown {
             pageCount: Int,
             ocrPages: [Int],
             links: [Link],
-            pages: [Page])
-        {
+            pages: [Page]
+        ) {
             self.markdown = markdown
             self.pageCount = pageCount
             self.ocrPages = ocrPages
@@ -127,7 +127,7 @@ public enum PDFMarkdown {
         var allLinks: [Link] = []
         var missingTextPages: [Int] = []
 
-        for index in 0..<pageCount {
+        for index in 0 ..< pageCount {
             let pageNumber = index + 1
             guard let page = pdf.page(at: index) else {
                 throw PDFMarkdownError.malformed
@@ -148,7 +148,9 @@ public enum PDFMarkdown {
                 if directText.isEmpty {
                     rawText = recognizeText(on: page)
                     usedOCR = !rawText.isEmpty
-                    if usedOCR { ocrPages.append(pageNumber) }
+                    if usedOCR {
+                        ocrPages.append(pageNumber)
+                    }
                 } else {
                     rawText = directText
                     usedOCR = false
@@ -167,7 +169,8 @@ public enum PDFMarkdown {
                     pageNumber: pageNumber,
                     markdown: md,
                     usedOCR: usedOCR,
-                    links: pageLinks))
+                    links: pageLinks
+                ))
             }
         }
 
@@ -188,7 +191,8 @@ public enum PDFMarkdown {
             pageCount: pageCount,
             ocrPages: ocrPages,
             links: allLinks,
-            pages: pages)
+            pages: pages
+        )
     }
 
     /// Format extracted page text into structured Markdown (`#`, `##`, `###`, `- `).
@@ -207,7 +211,9 @@ public enum PDFMarkdown {
 
             if let first = line.first, bulletCharacters.contains(first) {
                 let item = line.drop { bulletCharacters.contains($0) || $0.isWhitespace }
-                if !item.isEmpty { output.append("- \(item)") }
+                if !item.isEmpty {
+                    output.append("- \(item)")
+                }
                 return
             }
             if isSectionHeading(line) {
@@ -251,7 +257,8 @@ private extension PDFMarkdown {
 
     static let entryDateRegex = try? NSRegularExpression(
         pattern: #"\b(?:19|20)\d{2}\b|Present|Current"#,
-        options: [.caseInsensitive])
+        options: [.caseInsensitive]
+    )
 
     static func isSectionHeading(_ line: String) -> Bool {
         guard line.count <= 48, line.contains(where: \.isLetter) else { return false }
@@ -260,7 +267,9 @@ private extension PDFMarkdown {
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
             .lowercased()
-        if sectionNames.contains(key) { return true }
+        if sectionNames.contains(key) {
+            return true
+        }
         return line == line.uppercased() && !line.contains("|") && !line.contains("@") && line.count <= 32
     }
 
@@ -286,7 +295,8 @@ private extension PDFMarkdown {
             return Link(
                 page: pageNumber,
                 label: (label?.isEmpty == false) ? label : nil,
-                url: value)
+                url: value
+            )
         }
     }
 
@@ -302,7 +312,8 @@ private extension PDFMarkdown {
             bitsPerComponent: 8,
             bytesPerRow: 0,
             space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )
         else {
             return ""
         }
