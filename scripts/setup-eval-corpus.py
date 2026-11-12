@@ -103,7 +103,11 @@ def select_digital(archive, expected_total=TOTAL_DOCUMENTS, expected_digital=DIG
             paths.add(str(source_path))
             info = members.get(str(source_path))
             if info is None or info.is_dir():
-                raise ValueError(f"Missing PDF: {source_path}")
+                nearby = [
+                    name for name in members
+                    if PurePosixPath(name).name.startswith(source_path.name[:7])
+                ][:3]
+                raise ValueError(f"Missing PDF: {source_path}; ZIP candidates: {nearby!r}")
             if type(record.get("bytes")) is not int or record["bytes"] != info.file_size:
                 raise ValueError(f"PDF size mismatch: {source_path}")
             if info.file_size > 64 * 1024**2:
