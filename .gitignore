@@ -4,3 +4,7 @@
 xcuserdata/
 DerivedData/
 .swiftpm/
+/bench/corpus/
+/scripts/__pycache__/
+/Tools/Danger/.build/
+/Tools/Danger/.swiftpm/

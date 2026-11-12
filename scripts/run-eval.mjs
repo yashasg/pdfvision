@@ -1,166 +1,172 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import { pathToFileURL } from 'node:url';
+
+import {
+  renderBenchmarkSection,
+  replaceBenchmarkSection,
+  summarizeExternalCompletion,
+  summarizeSyntheticQuality,
+  validateExternalManifest,
+} from './eval-metrics.mjs';
 
 const repoRoot = path.resolve(import.meta.dirname, '..');
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf2markit-eval-'));
 
-function trigrams(text) {
-  const words = (text.toLowerCase().match(/[a-z0-9]+/g) || []);
-  const set = new Set();
-  for (let i = 0; i < words.length - 2; i++) {
-    set.add(`${words[i]} ${words[i + 1]} ${words[i + 2]}`);
-  }
-  return set;
-}
-
-function containment(truthSet, candidateSet) {
-  if (truthSet.size === 0) return 1.0;
-  let hits = 0;
-  for (const g of truthSet) {
-    if (candidateSet.has(g)) hits++;
-  }
-  return hits / truthSet.size;
-}
-
-function scoreOutput(md, linksCount, truth) {
-  if (!md || !md.trim()) return null;
-  const fullText = md + (linksCount ? ' ' + truth.expectedLinks.join(' ') : '');
-  const completeness = Math.round(containment(truth.trigrams, trigrams(fullText)) * 100);
-
-  const lines = md.split('\n').map(l => l.trim()).filter(Boolean);
-  const headingLines = lines.filter(l => /^#{1,6}\s+/.test(l)).length;
-  const headingRatio = Math.min(1, headingLines / Math.max(1, truth.expectedHeadings));
-  const mergedHeaderPenalty = /[a-z0-9.,;)] +(?:EDUCATION|WORK EXPERIENCE|EXPERIENCE|SKILLS|SUMMARY|PROJECTS)\b/.test(md) ? 0.35 : 0;
-  const structure = Math.max(0, Math.round((headingRatio - mergedHeaderPenalty) * 100));
-
-  const bulletLines = lines.filter(l => /^(?:[-*•]|\d+[.)])\s+/.test(l)).length;
-  const bulletRatio = Math.min(1, bulletLines / Math.max(1, truth.expectedBullets));
-  const extractedLinks = Math.max(linksCount || 0, (md.match(/https?:\/\//g) || []).length);
-  const linkRatio = truth.expectedLinks.length === 0
-    ? 1
-    : Math.min(1, extractedLinks / truth.expectedLinks.length);
-  const formatting = Math.round(((bulletRatio * 0.7) + (linkRatio * 0.3)) * 100);
-
-  let cleanScore = 100;
-  if (/^\s*\|.*\|\s*$/m.test(md) && !truth.hasTable) cleanScore -= 35;
-  if (/<\/?(?:u|span|div|font)\b/i.test(md)) cleanScore -= 20;
-  if (/(?:✔|•).*?(?:✔|•)/.test(md)) cleanScore -= 25;
-  if (mergedHeaderPenalty > 0) cleanScore -= 15;
-  const cleanliness = Math.max(0, cleanScore);
-
-  const score = Math.round((completeness + structure + formatting + cleanliness) / 4);
-  return { score, completeness, structure, formatting, cleanliness };
-}
-
-function median(values) {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
-function mean(values) {
-  if (!values.length) return 0;
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
-try {
-  console.log('Building pdf2markit release & running swift test...');
-  execFileSync('swift', ['test', '--package-path', repoRoot], { stdio: 'inherit' });
-  execFileSync('swift', ['build', '-c', 'release', '--package-path', repoRoot], { stdio: 'inherit' });
-
-  const swiftGen = path.join(tmpDir, 'gen_corpus.swift');
-  const pdfMarkdownSrc = fs.readFileSync(path.join(repoRoot, 'Sources/PDFMarkdown/PDFMarkdown.swift'), 'utf8');
-  fs.writeFileSync(
-    swiftGen,
-    pdfMarkdownSrc + `
-import AppKit
+export function buildSwiftGeneratorSource(pdfMarkdownSource) {
+  return `${pdfMarkdownSource}
+import CoreText
 
 @main
 struct CorpusRunner {
     static func main() throws {
-        let dir = URL(fileURLWithPath: CommandLine.arguments[1])
+        let directory = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         var manifest: [[String: Any]] = []
 
-        for i in 0..<25 {
-            let p1 = dir.appendingPathComponent("digital-single_\\(i).pdf")
-            try makeSingleCol(at: p1, index: i)
+        for index in 0..<25 {
+            let singleColumn = directory.appendingPathComponent("digital-single_\\(index).pdf")
+            try makeSingleColumn(at: singleColumn, index: index)
             manifest.append([
-                "id": "digital-single_\\(i)",
+                "id": "digital-single_\\(index)",
                 "category": "digital-single",
-                "path": p1.path,
-                "groundTruth": singleColTruth(index: i),
+                "path": singleColumn.path,
+                "corpus": "synthetic",
+                "groundTruth": singleColumnTruth(index: index),
                 "expectedHeadings": 7,
                 "expectedBullets": 6,
                 "expectedLinks": [] as [String],
             ])
 
-            let p2 = dir.appendingPathComponent("digital-2col_\\(i).pdf")
-            try makeTwoCol(at: p2, index: i)
+            let twoColumn = directory.appendingPathComponent("digital-2col_\\(index).pdf")
+            try makeTwoColumn(at: twoColumn, index: index)
             manifest.append([
-                "id": "digital-2col_\\(i)",
+                "id": "digital-2col_\\(index)",
                 "category": "digital-2col",
-                "path": p2.path,
-                "groundTruth": twoColTruth(index: i),
+                "path": twoColumn.path,
+                "corpus": "synthetic",
+                "groundTruth": twoColumnTruth(index: index),
                 "expectedHeadings": 6,
                 "expectedBullets": 6,
                 "expectedLinks": [] as [String],
             ])
 
-            let p3 = dir.appendingPathComponent("digital-links_\\(i).pdf")
-            try makeDigitalLinks(at: p3, index: i)
+            let links = directory.appendingPathComponent("digital-links_\\(index).pdf")
+            try makeDigitalLinks(at: links, index: index)
             manifest.append([
-                "id": "digital-links_\\(i)",
+                "id": "digital-links_\\(index)",
                 "category": "digital-links",
-                "path": p3.path,
-                "groundTruth": digitalLinksTruth(index: i),
+                "path": links.path,
+                "corpus": "synthetic",
+                "groundTruth": digitalLinksTruth(index: index),
                 "expectedHeadings": 7,
                 "expectedBullets": 6,
-                "expectedLinks": ["https://github.com/example", "https://linkedin.com/in/example"],
-            ])
-
-            let p4 = dir.appendingPathComponent("scanned-ocr_\\(i).pdf")
-            try makeScanned(at: p4, index: i)
-            manifest.append([
-                "id": "scanned-ocr_\\(i)",
-                "category": "scanned-ocr",
-                "path": p4.path,
-                "groundTruth": scannedTruth(index: i),
-                "expectedHeadings": 6,
-                "expectedBullets": 4,
-                "expectedLinks": [] as [String],
+                "expectedLinks": [
+                    "https://github.com/example",
+                    "https://linkedin.com/in/example",
+                ],
             ])
         }
 
-        _ = try PDFMarkdown.extract(at: URL(fileURLWithPath: manifest[0]["path"] as! String))
-        _ = try PDFMarkdown.extract(at: URL(fileURLWithPath: manifest[3]["path"] as! String))
+        if CommandLine.arguments.count > 2 {
+            let externalData = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[2]))
+            guard
+                let payload = try JSONSerialization.jsonObject(with: externalData) as? [String: Any],
+                let documents = payload["documents"] as? [[String: Any]]
+            else {
+                throw NSError(
+                    domain: "CorpusRunner",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "invalid external corpus manifest"]
+                )
+            }
+            for document in documents {
+                guard
+                    let id = document["id"] as? String,
+                    let category = document["category"] as? String,
+                    let documentPath = document["path"] as? String
+                else {
+                    throw NSError(
+                        domain: "CorpusRunner",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: "invalid external corpus document"]
+                    )
+                }
+                manifest.append([
+                    "id": id,
+                    "category": category,
+                    "path": documentPath,
+                    "corpus": "external",
+                ])
+            }
+        }
 
-        var pdf2markitResults: [[String: Any]] = []
+        var results: [[String: Any]] = []
+        results.reserveCapacity(manifest.count)
         for item in manifest {
-            let url = URL(fileURLWithPath: item["path"] as! String)
-            let data = try Data(contentsOf: url)
-            let t0 = ContinuousClock.now
-            let doc = try PDFMarkdown.extract(data: data, ocr: .automatic)
-            let dt = t0.duration(to: .now)
-            let ms = Double(dt.components.seconds) * 1000.0 + Double(dt.components.attoseconds) / 1e15
-            pdf2markitResults.append([
-                "id": item["id"] as! String,
-                "ms": ms,
-                "markdown": doc.markdown,
-                "linksCount": doc.links.count,
-            ])
+            let result: [String: Any] = autoreleasepool {
+                let id = item["id"] as! String
+                let category = item["category"] as! String
+                let corpus = item["corpus"] as! String
+                let started = ContinuousClock.now
+                do {
+                    let url = URL(fileURLWithPath: item["path"] as! String)
+                    let document = try PDFMarkdown.extract(at: url, ocr: .disabled)
+                    let milliseconds = elapsedMilliseconds(since: started)
+                    guard !document.markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        return [
+                            "id": id,
+                            "category": category,
+                            "corpus": corpus,
+                            "ms": milliseconds,
+                            "success": false,
+                            "outputNonEmpty": false,
+                            "error": "empty output",
+                        ]
+                    }
+
+                    var record: [String: Any] = [
+                        "id": id,
+                        "category": category,
+                        "corpus": corpus,
+                        "ms": milliseconds,
+                        "success": true,
+                        "outputNonEmpty": true,
+                    ]
+                    if corpus == "synthetic" {
+                        record["markdown"] = document.markdown
+                        record["links"] = document.links.map(\\.url)
+                    }
+                    return record
+                } catch {
+                    return [
+                        "id": id,
+                        "category": category,
+                        "corpus": corpus,
+                        "ms": elapsedMilliseconds(since: started),
+                        "success": false,
+                        "outputNonEmpty": false,
+                        "error": String(String(describing: error).prefix(500)),
+                    ]
+                }
+            }
+            results.append(result)
         }
 
-        let payload: [String: Any] = ["manifest": manifest, "pdf2markit": pdf2markitResults]
-        let outData = try JSONSerialization.data(withJSONObject: payload)
-        try outData.write(to: dir.appendingPathComponent("swift_out.json"))
+        let payload: [String: Any] = ["manifest": manifest, "pdfvision": results]
+        let output = try JSONSerialization.data(withJSONObject: payload)
+        try output.write(to: directory.appendingPathComponent("swift_out.json"))
     }
 
-    static func singleColTruth(index: Int) -> String {
+    static func elapsedMilliseconds(since started: ContinuousClock.Instant) -> Double {
+        let duration = started.duration(to: .now)
+        return Double(duration.components.seconds) * 1_000.0
+            + Double(duration.components.attoseconds) / 1e15
+    }
+
+    static func singleColumnTruth(index: Int) -> String {
         """
         Maya Okafor \\(index)
         Senior Software Engineer
@@ -181,12 +187,12 @@ struct CorpusRunner {
         """
     }
 
-    static func makeSingleCol(at url: URL, index: Int) throws {
+    static func makeSingleColumn(at url: URL, index: Int) throws {
         let data = NSMutableData()
         var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
         let consumer = CGDataConsumer(data: data as CFMutableData)!
-        let ctx = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
-        ctx.beginPDFPage(nil)
+        let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
+        context.beginPDFPage(nil)
         let lines: [(String, CGFloat, CGFloat)] = [
             ("Maya Okafor \\(index)", 20, 732),
             ("Senior Software Engineer", 14, 712),
@@ -205,17 +211,15 @@ struct CorpusRunner {
             ("EDUCATION", 11, 456),
             ("UC Berkeley B.S. in Computer Science 2019", 10.5, 440),
         ]
-        for (t, sz, y) in lines {
-            ctx.textPosition = CGPoint(x: 56, y: y)
-            let attrs = [kCTFontAttributeName: CTFontCreateWithName("Helvetica" as CFString, sz, nil)] as CFDictionary
-            CTLineDraw(CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, t as CFString, attrs)!), ctx)
+        for (text, size, y) in lines {
+            draw(text, in: context, x: 56, y: y, size: size)
         }
-        ctx.endPDFPage()
-        ctx.closePDF()
+        context.endPDFPage()
+        context.closePDF()
         try (data as Data).write(to: url)
     }
 
-    static func twoColTruth(index: Int) -> String {
+    static func twoColumnTruth(index: Int) -> String {
         """
         Alex Rivera \\(index)
         Staff Platform Engineer
@@ -233,32 +237,27 @@ struct CorpusRunner {
         """
     }
 
-    static func makeTwoCol(at url: URL, index: Int) throws {
+    static func makeTwoColumn(at url: URL, index: Int) throws {
         let data = NSMutableData()
         var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
         let consumer = CGDataConsumer(data: data as CFMutableData)!
-        let ctx = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
-        ctx.beginPDFPage(nil)
-        func draw(_ t: String, x: CGFloat, y: CGFloat, sz: CGFloat = 10) {
-            ctx.textPosition = CGPoint(x: x, y: y)
-            let attrs = [kCTFontAttributeName: CTFontCreateWithName("Helvetica" as CFString, sz, nil)] as CFDictionary
-            CTLineDraw(CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, t as CFString, attrs)!), ctx)
-        }
-        draw("Alex Rivera \\(index)", x: 48, y: 730, sz: 20)
-        draw("Staff Platform Engineer", x: 48, y: 710, sz: 13)
-        draw("EXPERIENCE", x: 48, y: 675, sz: 11)
-        draw("Brightwave Staff Engineer 2021 - Present", x: 48, y: 655, sz: 10.5)
-        draw("• Architected multi-region service mesh across 3 cloud clusters.", x: 48, y: 638)
-        draw("• Lowered infrastructure compute spend by 28%.", x: 48, y: 622)
-        draw("SKILLS", x: 380, y: 675, sz: 11)
-        draw("• Rust", x: 380, y: 655)
-        draw("• Swift", x: 380, y: 638)
-        draw("• Kubernetes", x: 380, y: 622)
-        draw("• Linux", x: 380, y: 606)
-        draw("EDUCATION", x: 48, y: 580, sz: 11)
-        draw("MIT B.S. Computer Science 2018", x: 48, y: 562, sz: 10.5)
-        ctx.endPDFPage()
-        ctx.closePDF()
+        let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
+        context.beginPDFPage(nil)
+        draw("Alex Rivera \\(index)", in: context, x: 48, y: 730, size: 20)
+        draw("Staff Platform Engineer", in: context, x: 48, y: 710, size: 13)
+        draw("EXPERIENCE", in: context, x: 48, y: 675, size: 11)
+        draw("Brightwave Staff Engineer 2021 - Present", in: context, x: 48, y: 655, size: 10.5)
+        draw("• Architected multi-region service mesh across 3 cloud clusters.", in: context, x: 48, y: 638)
+        draw("• Lowered infrastructure compute spend by 28%.", in: context, x: 48, y: 622)
+        draw("SKILLS", in: context, x: 380, y: 675, size: 11)
+        draw("• Rust", in: context, x: 380, y: 655)
+        draw("• Swift", in: context, x: 380, y: 638)
+        draw("• Kubernetes", in: context, x: 380, y: 622)
+        draw("• Linux", in: context, x: 380, y: 606)
+        draw("EDUCATION", in: context, x: 48, y: 580, size: 11)
+        draw("MIT B.S. Computer Science 2018", in: context, x: 48, y: 562, size: 10.5)
+        context.endPDFPage()
+        context.closePDF()
         try (data as Data).write(to: url)
     }
 
@@ -286,8 +285,8 @@ struct CorpusRunner {
         let data = NSMutableData()
         var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
         let consumer = CGDataConsumer(data: data as CFMutableData)!
-        let ctx = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
-        ctx.beginPDFPage(nil)
+        let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
+        context.beginPDFPage(nil)
         let lines: [(String, CGFloat, CGFloat)] = [
             ("Jordan Taylor \\(index)", 20, 732),
             ("Principal Systems Engineer", 14, 712),
@@ -304,307 +303,375 @@ struct CorpusRunner {
             ("EDUCATION", 11, 498),
             ("Stanford University M.S. Computer Science 2017 - 2019", 10.5, 480),
         ]
-        for (t, sz, y) in lines {
-            ctx.textPosition = CGPoint(x: 56, y: y)
-            let attrs = [kCTFontAttributeName: CTFontCreateWithName("Helvetica" as CFString, sz, nil)] as CFDictionary
-            CTLineDraw(CTLineCreateWithAttributedString(CFAttributedStringCreate(nil, t as CFString, attrs)!), ctx)
+        for (text, size, y) in lines {
+            draw(text, in: context, x: 56, y: y, size: size)
         }
-        ctx.setURL(URL(string: "https://github.com/example")! as CFURL, for: CGRect(x: 150, y: 690, width: 45, height: 14))
-        ctx.setURL(URL(string: "https://linkedin.com/in/example")! as CFURL, for: CGRect(x: 205, y: 690, width: 55, height: 14))
-        ctx.endPDFPage()
-        ctx.closePDF()
+        context.setURL(
+            URL(string: "https://github.com/example")! as CFURL,
+            for: CGRect(x: 150, y: 690, width: 45, height: 14)
+        )
+        context.setURL(
+            URL(string: "https://linkedin.com/in/example")! as CFURL,
+            for: CGRect(x: 205, y: 690, width: 55, height: 14)
+        )
+        context.endPDFPage()
+        context.closePDF()
         try (data as Data).write(to: url)
     }
 
-    static func scannedTruth(index: Int) -> String {
-        """
-        JESSICA CLAIRE \\(index)
-        Senior Accountant
-        SUMMARY
-        Detail-oriented Accountant managing financial reporting and tax compliance.
-        EXPERIENCE
-        2022 - Present Senior Accountant Brightwave
-        Automated monthly reconciliation across 12 regional ledgers.
-        Reduced quarterly audit preparation time by 35%.
-        SKILLS
-        GAAP
-        SQL
-        EDUCATION
-        2019 B.S. Accounting UC Berkeley
-        """
-    }
-
-    static func makeScanned(at url: URL, index: Int) throws {
-        let width = 1224
-        let height = 1584
-        let bmp = CGContext(
-            data: nil, width: width, height: height,
-            bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-        bmp.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-        bmp.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        let nsCtx = NSGraphicsContext(cgContext: bmp, flipped: false)
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = nsCtx
-        let text = """
-        JESSICA CLAIRE \\(index)
-        Senior Accountant
-        SUMMARY
-        Detail-oriented Accountant managing financial reporting and tax compliance.
-        EXPERIENCE
-        2022 - Present Senior Accountant Brightwave
-        • Automated monthly reconciliation across 12 regional ledgers.
-        • Reduced quarterly audit preparation time by 35%.
-        SKILLS
-        • GAAP
-        • SQL
-        EDUCATION
-        2019 B.S. Accounting UC Berkeley
-        """
-        let style = NSMutableParagraphStyle()
-        style.lineSpacing = 10
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 28),
-            .foregroundColor: NSColor.black,
-            .paragraphStyle: style,
-        ]
-        (text as NSString).draw(in: CGRect(x: 72, y: 120, width: 1080, height: 1360), withAttributes: attrs)
-        NSGraphicsContext.restoreGraphicsState()
-        let cgImg = bmp.makeImage()!
-        let data = NSMutableData()
-        var mediaBox = CGRect(x: 0, y: 0, width: 612, height: 792)
-        let consumer = CGDataConsumer(data: data as CFMutableData)!
-        let pdfCtx = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
-        pdfCtx.beginPDFPage(nil)
-        pdfCtx.draw(cgImg, in: mediaBox)
-        pdfCtx.endPDFPage()
-        pdfCtx.closePDF()
-        try (data as Data).write(to: url)
+    static func draw(
+        _ text: String,
+        in context: CGContext,
+        x: CGFloat,
+        y: CGFloat,
+        size: CGFloat = 10
+    ) {
+        context.textPosition = CGPoint(x: x, y: y)
+        let attributes = [
+            kCTFontAttributeName: CTFontCreateWithName("Helvetica" as CFString, size, nil),
+        ] as CFDictionary
+        let attributed = CFAttributedStringCreate(nil, text as CFString, attributes)!
+        CTLineDraw(CTLineCreateWithAttributedString(attributed), context)
     }
 }
-`
-  );
+`;
+}
 
-  const genBin = path.join(tmpDir, 'gen_corpus_bin');
-  execFileSync('swiftc', ['-O', '-parse-as-library', swiftGen, '-o', genBin], { stdio: 'inherit' });
-  execFileSync(genBin, [tmpDir], { stdio: 'inherit' });
-
-  const { manifest, pdf2markit: pdf2markitRuns } = JSON.parse(
-    fs.readFileSync(path.join(tmpDir, 'swift_out.json'), 'utf8')
-  );
-
-  const require = createRequire(import.meta.url);
-  let anydocModulePath = '@firecrawl/anydoc';
-  let anydocPkgPath = path.join(repoRoot, 'node_modules/@firecrawl/anydoc/package.json');
-  if (!fs.existsSync(anydocPkgPath) && process.env.ANYDOC_MODULE_DIR) {
-    anydocModulePath = path.join(process.env.ANYDOC_MODULE_DIR, 'index.js');
-    anydocPkgPath = path.join(process.env.ANYDOC_MODULE_DIR, 'package.json');
+function loadExternalManifest() {
+  const manifestPath = process.env.PDFVISION_EVAL_CORPUS_MANIFEST;
+  if (!manifestPath) return { manifestPath: null, manifest: null };
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`PDFVISION_EVAL_CORPUS_MANIFEST does not exist: ${manifestPath}`);
   }
-  const { toMarkdownBytes } = await import(anydocModulePath);
-  const anydocPkg = JSON.parse(fs.readFileSync(anydocPkgPath, 'utf8'));
-
+  let parsed;
   try {
-    await toMarkdownBytes(fs.readFileSync(manifest[0].path));
-  } catch {}
-
-  const anydocRuns = [];
-  for (const item of manifest) {
-    const buf = fs.readFileSync(item.path);
-    const t0 = performance.now();
-    try {
-      const md = await toMarkdownBytes(buf);
-      anydocRuns.push({ id: item.id, ms: performance.now() - t0, markdown: md, linksCount: 0 });
-    } catch {
-      anydocRuns.push({ id: item.id, ms: performance.now() - t0, markdown: '', linksCount: 0 });
-    }
+    parsed = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`failed to parse PDFVISION_EVAL_CORPUS_MANIFEST: ${error.message}`);
   }
-
-  const pyScript = path.join(tmpDir, 'py_bench.py');
-  fs.writeFileSync(
-    pyScript,
-    `import json, sys, time
-manifest = json.loads(open(sys.argv[1]).read())["manifest"]
-out = {}
-
-def bench_tool(name, fn):
-    runs = []
-    try:
-        fn(manifest[0]["path"])
-    except Exception:
-        pass
-    for item in manifest:
-        t0 = time.perf_counter()
-        try:
-            md = fn(item["path"]) or ""
-        except Exception:
-            md = ""
-        dt = (time.perf_counter() - t0) * 1000.0
-        runs.append({"id": item["id"], "ms": dt, "markdown": md, "linksCount": 0})
-    out[name] = runs
-
-try:
-    import pymupdf4llm
-    bench_tool("pymupdf4llm", lambda p: pymupdf4llm.to_markdown(p))
-except Exception:
-    pass
-
-try:
-    from markitdown import MarkItDown
-    md_client = MarkItDown()
-    bench_tool("markitdown", lambda p: md_client.convert(p).text_content)
-except Exception:
-    pass
-
-print(json.dumps(out))
-`
-  );
-
-  let pyCompetitors = {};
-  try {
-    const pyOut = execFileSync('python3', [pyScript, path.join(tmpDir, 'swift_out.json')], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    pyCompetitors = JSON.parse(pyOut.trim());
-  } catch {}
-
-  const truthById = new Map(
-    manifest.map(m => [
-      m.id,
-      {
-        category: m.category,
-        trigrams: trigrams(m.groundTruth),
-        expectedHeadings: m.expectedHeadings,
-        expectedBullets: m.expectedBullets,
-        expectedLinks: m.expectedLinks,
-        hasTable: false,
-      },
-    ])
-  );
-
-  const allTools = {
-    pdf2markit: pdf2markitRuns,
-    anydoc: anydocRuns,
-    ...pyCompetitors,
+  return {
+    manifestPath,
+    manifest: validateExternalManifest(parsed, { fileExists: fs.existsSync }),
   };
+}
 
-  const categories = ['digital-single', 'digital-2col', 'digital-links', 'scanned-ocr'];
-  const summary = {};
+function cleanError(error) {
+  return String(error?.message ?? error).replaceAll(/\s+/g, ' ').slice(0, 500);
+}
 
-  for (const [tool, runs] of Object.entries(allTools)) {
-    const catScores = {};
-    const okTimes = [];
-    const dimTotals = { completeness: [], structure: [], formatting: [], cleanliness: [] };
-    let docsJudged = 0;
-
-    for (const cat of categories) {
-      const catRuns = runs.filter(r => truthById.get(r.id).category === cat);
-      const scored = [];
-      for (const r of catRuns) {
-        const s = scoreOutput(r.markdown, r.linksCount, truthById.get(r.id));
-        if (s) {
-          scored.push(s);
-          okTimes.push(r.ms);
-          docsJudged++;
-          dimTotals.completeness.push(s.completeness);
-          dimTotals.structure.push(s.structure);
-          dimTotals.formatting.push(s.formatting);
-          dimTotals.cleanliness.push(s.cleanliness);
-        }
-      }
-      catScores[cat] = scored.length ? Math.round(mean(scored.map(x => x.score))) : null;
-    }
-
-    const supportedCats = categories.filter(c => catScores[c] !== null);
-    const macroScore = supportedCats.length
-      ? Math.round(mean(supportedCats.map(c => catScores[c])))
-      : 0;
-
-    summary[tool] = {
-      typesCovered: `${supportedCats.length}/${categories.length}`,
-      supportedCount: supportedCats.length,
-      medianMs: median(okTimes),
-      docsJudged,
-      score: macroScore,
-      completeness: Math.round(mean(dimTotals.completeness)),
-      structure: Math.round(mean(dimTotals.structure)),
-      formatting: Math.round(mean(dimTotals.formatting)),
-      cleanliness: Math.round(mean(dimTotals.cleanliness)),
-      byCategory: catScores,
-    };
+function normalizeMarkdown(value) {
+  if (typeof value === 'string') return value;
+  if (Buffer.isBuffer(value) || value instanceof Uint8Array) {
+    return Buffer.from(value).toString('utf8');
   }
-
-  const rankedTools = Object.keys(summary).sort((a, b) => {
-    if (summary[b].supportedCount !== summary[a].supportedCount) {
-      return summary[b].supportedCount - summary[a].supportedCount;
-    }
-    return summary[b].score - summary[a].score;
-  });
-
-  const fastestMs = Math.min(...rankedTools.map(t => summary[t].medianMs ?? Infinity));
-  const bestByDim = {};
-  for (const dim of ['score', 'completeness', 'structure', 'formatting', 'cleanliness']) {
-    bestByDim[dim] = Math.max(...rankedTools.map(t => summary[t][dim]));
+  for (const key of ['markdown', 'text', 'content']) {
+    if (typeof value?.[key] === 'string') return value[key];
   }
-  const maxCats = Math.max(...rankedTools.map(t => summary[t].supportedCount));
-  const maxDocs = Math.max(...rankedTools.map(t => summary[t].docsJudged));
+  return '';
+}
 
-  const bold = (val, isBest) => (isBest ? `**${val}**` : `${val}`);
+async function loadAnydoc() {
+  let moduleSpecifier = '@firecrawl/anydoc';
+  let packagePath = path.join(repoRoot, 'node_modules/@firecrawl/anydoc/package.json');
+  if (process.env.ANYDOC_MODULE_DIR) {
+    moduleSpecifier = pathToFileURL(path.join(process.env.ANYDOC_MODULE_DIR, 'index.js')).href;
+    packagePath = path.join(process.env.ANYDOC_MODULE_DIR, 'package.json');
+  }
+  if (!fs.existsSync(packagePath)) {
+    throw new Error(`anydoc package metadata not found at ${packagePath}`);
+  }
+  const anydoc = await import(moduleSpecifier);
+  if (typeof anydoc.toMarkdownBytes !== 'function') {
+    throw new Error('anydoc does not export toMarkdownBytes');
+  }
+  const packageJSON = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+  return { toMarkdownBytes: anydoc.toMarkdownBytes, version: packageJSON.version };
+}
 
-  const mainRows = rankedTools.map(t => {
-    const s = summary[t];
-    const msStr = s.medianMs == null ? '-' : bold(s.medianMs.toFixed(1), s.medianMs === fastestMs);
-    return (
-      `| ${t} | ${bold(s.typesCovered, s.supportedCount === maxCats)} | ${msStr} | ` +
-      `${bold(s.docsJudged, s.docsJudged === maxDocs)} | ` +
-      `${bold(s.score, s.score === bestByDim.score)} | ` +
-      `${bold(s.completeness, s.completeness === bestByDim.completeness)} | ` +
-      `${bold(s.structure, s.structure === bestByDim.structure)} | ` +
-      `${bold(s.formatting, s.formatting === bestByDim.formatting)} | ` +
-      `${bold(s.cleanliness, s.cleanliness === bestByDim.cleanliness)} |`
-    );
-  });
+async function runAnydoc(documents, toMarkdownBytes) {
+  const runs = [];
+  for (const document of documents) {
+    const started = performance.now();
+    try {
+      const bytes = fs.readFileSync(document.path);
+      const markdown = normalizeMarkdown(await toMarkdownBytes(bytes));
+      const success = markdown.trim().length > 0;
+      runs.push({
+        id: document.id,
+        category: document.category,
+        corpus: document.corpus,
+        ms: performance.now() - started,
+        success,
+        outputNonEmpty: success,
+        ...(document.corpus === 'synthetic' ? { markdown, links: [] } : {}),
+        ...(!success ? { error: 'empty output' } : {}),
+      });
+    } catch (error) {
+      runs.push({
+        id: document.id,
+        category: document.category,
+        corpus: document.corpus,
+        ms: performance.now() - started,
+        success: false,
+        outputNonEmpty: false,
+        error: cleanError(error),
+      });
+    }
+  }
+  return runs;
+}
 
-  const catHeader = `| pdf type | ${rankedTools.join(' | ')} |`;
-  const catSep = `| --- | ${rankedTools.map(() => '---').join(' | ')} |`;
-  const catRows = categories.map(cat => {
-    const vals = rankedTools.map(t => summary[t].byCategory[cat]);
-    const top = Math.max(...vals.filter(v => v !== null));
-    const cells = vals.map(v => (v === null ? '-' : bold(v, v === top)));
-    return `| ${cat} | ${cells.join(' | ')} |`;
-  });
-
-  const dateStr = new Date().toISOString().slice(0, 10);
-  const runnerCpu = os.cpus()[0]?.model || 'Apple Silicon';
-
-  const benchMarkdown = `<!-- BENCHMARK:START -->
-\`pdf2markit\` is measured against \`anydoc\`${rankedTools.length > 2 ? ' and Python PDF converters' : ''} on 100 PDFs spanning four document categories (\`digital-single\`, \`digital-2col\`, \`digital-links\`, and \`scanned-ocr\`). Scores run from 0 to 100, higher is better; speed is the median time to convert one document in-process.
-
-| tool | pdf types | median ms | docs judged | score | completeness | structure | formatting | cleanliness |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-${mainRows.join('\n')}
-
-Per PDF type, like for like:
-
-${catHeader}
-${catSep}
-${catRows.join('\n')}
-
-**How quality was scored:** each output is scored from 0 to 100 against the document's exact ground truth across four dimensions: **completeness** (word-trigram recall), **structure** (\`#\`/\`##\`/\`###\` heading hierarchy preservation), **formatting** (bullet list and \`PDFAnnotation\` hyperlink preservation), and **cleanliness** (absence of false-positive Markdown tables on multi-column layouts, collapsed bullet lines, and leaked HTML tags). Each tool's \`score\` averages its per-category scores over the categories it supports.
-
-_Last refreshed automatically by GitHub Actions on **${dateStr}** (\`anydoc ${anydocPkg.version}\`, \`${runnerCpu}\`)._
-<!-- BENCHMARK:END -->`;
-
+function writeMarkitdownRunner(scriptPath) {
   fs.writeFileSync(
-    path.join(repoRoot, 'bench/latest.json'),
-    JSON.stringify({ updatedAt: new Date().toISOString(), runner: runnerCpu, summary }, null, 2) + '\n'
-  );
+    scriptPath,
+    `import importlib.metadata
+import json
+import sys
+import time
 
-  const readmePath = path.join(repoRoot, 'README.md');
-  let readme = fs.readFileSync(readmePath, 'utf8');
-  readme = readme.replace(/<!-- BENCHMARK:START -->[\s\S]*?<!-- BENCHMARK:END -->/, benchMarkdown);
-  fs.writeFileSync(readmePath, readme);
-  console.log('Updated README.md and bench/latest.json with anydoc-style benchmark tables.');
-} finally {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+from markitdown import MarkItDown
+
+with open(sys.argv[1], encoding="utf-8") as handle:
+    documents = json.load(handle)["documents"]
+
+converter = MarkItDown()
+runs = []
+for document in documents:
+    started = time.perf_counter()
+    try:
+        markdown = converter.convert(document["path"]).text_content or ""
+        success = bool(markdown.strip())
+        record = {
+            "id": document["id"],
+            "category": document["category"],
+            "corpus": document["corpus"],
+            "ms": (time.perf_counter() - started) * 1000.0,
+            "success": success,
+            "outputNonEmpty": success,
+        }
+        if document["corpus"] == "synthetic":
+            record["markdown"] = markdown
+            record["links"] = []
+        if not success:
+            record["error"] = "empty output"
+        runs.append(record)
+    except Exception as error:
+        runs.append({
+            "id": document["id"],
+            "category": document["category"],
+            "corpus": document["corpus"],
+            "ms": (time.perf_counter() - started) * 1000.0,
+            "success": False,
+            "outputNonEmpty": False,
+            "error": " ".join(str(error).split())[:500],
+        })
+
+payload = {
+    "version": importlib.metadata.version("markitdown"),
+    "runs": runs,
+}
+with open(sys.argv[2], "w", encoding="utf-8") as handle:
+    json.dump(payload, handle)
+`
+  );
+}
+
+function splitRuns(runs) {
+  return {
+    synthetic: runs.filter(run => run.corpus === 'synthetic'),
+    external: runs.filter(run => run.corpus === 'external'),
+  };
+}
+
+function formatMs(value) {
+  return value == null ? '-' : value.toFixed(1);
+}
+
+function printTiming(title, timing) {
+  console.log(`\n${title}: ${timing.commonSuccessDocuments}/${timing.totalDocuments} common-success documents`);
+  console.log('| tool | succeeded | common-success median ms |');
+  console.log('| --- | ---: | ---: |');
+  for (const [tool, result] of Object.entries(timing.tools)) {
+    console.log(`| ${tool} | ${result.succeeded}/${result.attempted} | ${formatMs(result.commonSuccessMedianMs)} |`);
+  }
+}
+
+function printSyntheticTable(summary) {
+  console.log(`\nSynthetic ground-truth quality (${summary.documentCount} digital PDFs)`);
+  console.log('| tool | succeeded | failed | score | completeness | structure | formatting | cleanliness |');
+  console.log('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
+  for (const [tool, result] of Object.entries(summary.tools)) {
+    console.log(
+      `| ${tool} | ${result.succeeded}/${result.attempted} | ${result.failed} | ${result.score} | ` +
+      `${result.completeness} | ${result.structure} | ${result.formatting} | ${result.cleanliness} |`
+    );
+  }
+  printTiming('Synthetic like-for-like timing', summary.timing);
+}
+
+function printExternalTable(summary) {
+  console.log(`\nExternal completion and timing (${summary.documentCount} digital PDFs)`);
+  console.log('| tool | category | attempted | succeeded | failed | median conversion ms |');
+  console.log('| --- | --- | ---: | ---: | ---: | ---: |');
+  for (const [tool, result] of Object.entries(summary.tools)) {
+    for (const [category, categoryResult] of Object.entries(result.byCategory)) {
+      console.log(
+        `| ${tool} | ${category} | ${categoryResult.attempted} | ${categoryResult.succeeded} | ` +
+        `${categoryResult.failed} | ${formatMs(categoryResult.medianMs)} |`
+      );
+    }
+  }
+  printTiming('External like-for-like timing', summary.timing);
+}
+
+export async function main() {
+  if (process.env.GITHUB_ACTIONS !== 'true') {
+    throw new Error('the full evaluation may only run in GitHub Actions');
+  }
+
+  const { manifestPath: externalManifestPath, manifest: externalManifest } = loadExternalManifest();
+  const buildDirectory = path.join(repoRoot, '.build');
+  fs.mkdirSync(buildDirectory, { recursive: true });
+  const workDirectory = fs.mkdtempSync(path.join(buildDirectory, 'pdfvision-eval-'));
+
+  try {
+    console.log('Building pdfvision and running Swift tests...');
+    execFileSync('swift', ['test', '--package-path', repoRoot], { stdio: 'inherit' });
+    execFileSync('swift', ['build', '-c', 'release', '--package-path', repoRoot], { stdio: 'inherit' });
+
+    const swiftSourcePath = path.join(workDirectory, 'gen_corpus.swift');
+    const pdfMarkdownSource = fs.readFileSync(
+      path.join(repoRoot, 'Sources/PDFMarkdown/PDFMarkdown.swift'),
+      'utf8'
+    );
+    fs.writeFileSync(swiftSourcePath, buildSwiftGeneratorSource(pdfMarkdownSource));
+
+    const generatorBinary = path.join(workDirectory, 'gen_corpus_bin');
+    execFileSync(
+      'swiftc',
+      ['-O', '-parse-as-library', swiftSourcePath, '-o', generatorBinary],
+      { stdio: 'inherit' }
+    );
+    const generatorArguments = [workDirectory];
+    if (externalManifestPath) generatorArguments.push(externalManifestPath);
+    execFileSync(generatorBinary, generatorArguments, { stdio: 'inherit' });
+
+    const swiftPayload = JSON.parse(
+      fs.readFileSync(path.join(workDirectory, 'swift_out.json'), 'utf8')
+    );
+    const documents = swiftPayload.manifest;
+    const syntheticDocuments = documents.filter(document => document.corpus === 'synthetic');
+    const externalDocuments = documents.filter(document => document.corpus === 'external');
+
+    if (syntheticDocuments.length !== 75) {
+      throw new Error(`Swift generator produced ${syntheticDocuments.length} synthetic documents, expected 75`);
+    }
+    if (externalDocuments.length !== (externalManifest?.documents.length ?? 0)) {
+      throw new Error('Swift generator external document count does not match the validated manifest');
+    }
+
+    const { toMarkdownBytes, version: anydocVersion } = await loadAnydoc();
+    const anydocRuns = await runAnydoc(documents, toMarkdownBytes);
+
+    const toolsManifestPath = path.join(workDirectory, 'tools_manifest.json');
+    fs.writeFileSync(toolsManifestPath, JSON.stringify({ documents }));
+    const markitdownScriptPath = path.join(workDirectory, 'markitdown_bench.py');
+    const markitdownOutputPath = path.join(workDirectory, 'markitdown_out.json');
+    writeMarkitdownRunner(markitdownScriptPath);
+    execFileSync(
+      'python3',
+      [markitdownScriptPath, toolsManifestPath, markitdownOutputPath],
+      { stdio: 'inherit' }
+    );
+    if (!fs.existsSync(markitdownOutputPath)) {
+      throw new Error('markitdown did not produce its required JSON result file');
+    }
+    const markitdownPayload = JSON.parse(fs.readFileSync(markitdownOutputPath, 'utf8'));
+    if (!Array.isArray(markitdownPayload.runs)) {
+      throw new Error('markitdown result file does not contain a runs array');
+    }
+
+    const pdfvision = splitRuns(swiftPayload.pdfvision);
+    const anydoc = splitRuns(anydocRuns);
+    const markitdown = splitRuns(markitdownPayload.runs);
+    const syntheticQuality = summarizeSyntheticQuality(syntheticDocuments, {
+      pdfvision: pdfvision.synthetic,
+      anydoc: anydoc.synthetic,
+      markitdown: markitdown.synthetic,
+    });
+    const externalCompletion = externalDocuments.length === 0
+      ? null
+      : summarizeExternalCompletion(externalDocuments, {
+          pdfvision: pdfvision.external,
+          anydoc: anydoc.external,
+          markitdown: markitdown.external,
+        });
+
+    const sharedMetadata = {
+      schemaVersion: 2,
+      updatedAt: new Date().toISOString(),
+      runner: os.cpus()[0]?.model || 'unknown',
+      mode: 'digital-only',
+      tools: {
+        pdfvision: 'source',
+        anydoc: anydocVersion,
+        markitdown: markitdownPayload.version,
+      },
+    };
+    const syntheticArtifact = {
+      ...sharedMetadata,
+      corpus: {
+        kind: 'synthetic-ground-truth',
+        documentCount: syntheticDocuments.length,
+        categories: syntheticQuality.categories,
+      },
+      syntheticQuality,
+    };
+    const readmePath = path.join(repoRoot, 'README.md');
+    const renderedReadme = replaceBenchmarkSection(
+      fs.readFileSync(readmePath, 'utf8'),
+      renderBenchmarkSection({
+        syntheticQuality,
+        externalCompletion,
+        updatedAt: sharedMetadata.updatedAt,
+      })
+    );
+
+    fs.writeFileSync(
+      path.join(repoRoot, 'bench/latest.json'),
+      `${JSON.stringify(syntheticArtifact, null, 2)}\n`
+    );
+    if (externalCompletion) {
+      const externalArtifact = {
+        ...sharedMetadata,
+        corpus: {
+          kind: 'external-completion',
+          schemaVersion: externalManifest.schemaVersion,
+          source: externalManifest.source,
+          documentCount: externalDocuments.length,
+          categories: externalCompletion.categories,
+        },
+        externalCompletion,
+      };
+      fs.writeFileSync(
+        path.join(repoRoot, 'bench/external-latest.json'),
+        `${JSON.stringify(externalArtifact, null, 2)}\n`
+      );
+    }
+    fs.writeFileSync(readmePath, renderedReadme);
+    printSyntheticTable(syntheticQuality);
+    if (externalCompletion) printExternalTable(externalCompletion);
+    else console.log('\nNo external corpus manifest was provided; external evaluation was skipped.');
+    console.log(
+      externalCompletion
+        ? '\nWrote README.md, bench/latest.json, and bench/external-latest.json.'
+        : '\nWrote README.md and bench/latest.json.'
+    );
+  } finally {
+    fs.rmSync(workDirectory, { recursive: true, force: true });
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
 }

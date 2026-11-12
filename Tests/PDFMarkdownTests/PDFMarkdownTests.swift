@@ -3,8 +3,8 @@ import CoreGraphics
 import CoreText
 import Foundation
 import PDFKit
-import Testing
 @testable import PDFMarkdown
+import Testing
 
 struct PDFMarkdownTests {
     @Test("Converts digital PDF with headings, checkmark bullets, and link annotations in single-digit ms")
@@ -81,7 +81,8 @@ private func makeScannedImagePDF() throws -> Data {
         bitsPerComponent: 8,
         bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ))
     bitmap.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
     bitmap.fill(CGRect(x: 0, y: 0, width: width, height: height))
 
