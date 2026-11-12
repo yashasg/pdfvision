@@ -155,7 +155,7 @@ def main():
         prepared = temporary / "prepared"
         prepared.mkdir()
         download(NOTICE, prepared / "SOURCE-README.md")
-        with zipfile.ZipFile(temporary / "corpus.zip") as archive:
+        with zipfile.ZipFile(temporary / "corpus.zip", metadata_encoding="utf-8") as archive:
             documents = select_digital(archive)
             extract_digital(archive, documents, prepared)
         for document in documents:

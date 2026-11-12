@@ -40,6 +40,37 @@ def archive(records, extra=None):
 
 
 class CorpusSetupTests(unittest.TestCase):
+    def test_setup_reads_utf8_zip_names_without_the_utf8_flag(self):
+        record = fixture(file="pdf/receipt/0000127_BON-MÜL.pdf")
+        with archive([record]) as source:
+            data = bytearray(source.fp.getvalue())
+        for signature, flag_offset in [(b"PK\x03\x04", 6), (b"PK\x01\x02", 8)]:
+            offset = 0
+            while (offset := data.find(signature, offset)) >= 0:
+                position = offset + flag_offset
+                flags = int.from_bytes(data[position:position + 2], "little") & ~0x800
+                data[position:position + 2] = flags.to_bytes(2, "little")
+                offset += len(signature)
+        select = corpus.select_digital
+
+        def fake_download(asset, destination):
+            destination.write_bytes(data if asset is corpus.ARCHIVE else b"fixture attribution")
+
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "prepared"
+            with patch.object(corpus, "download", side_effect=fake_download), patch.object(
+                corpus, "select_digital",
+                side_effect=lambda source: select(source, expected_total=1, expected_digital=1),
+            ), patch.object(corpus.sys, "argv", [spec.origin, str(destination)]), patch.dict(
+                corpus.os.environ, {"GITHUB_ACTIONS": "true"},
+            ), patch("sys.stdout", new_callable=io.StringIO):
+                corpus.main()
+            self.assertTrue((destination / record["file"]).is_file())
+            manifest = json.loads((destination / "manifest.json").read_text())
+            self.assertEqual(
+                manifest["documents"][0]["path"], str(destination.resolve() / record["file"])
+            )
+
     def test_download_verifies_pinned_content_without_network(self):
         data = b"fixture archive"
         asset = {
