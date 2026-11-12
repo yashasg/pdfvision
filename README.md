@@ -1,26 +1,21 @@
 # pdfvision
 
-Swift library and CLI that converts digital and scanned PDFs into GitHub-Flavored Markdown on macOS. Uses PDFKit and on-device Apple Vision OCR, with an [Agent Skill](https://agentskills.io) and no external OCR service.
+[![Code quality](https://github.com/yashasg/pdfvision/actions/workflows/code-quality.yml/badge.svg?branch=main)](https://github.com/yashasg/pdfvision/actions/workflows/code-quality.yml)
+[![Nightly benchmark](https://github.com/yashasg/pdfvision/actions/workflows/nightly-eval.yml/badge.svg)](https://github.com/yashasg/pdfvision/actions/workflows/nightly-eval.yml)
+[![Swift 6.0+](https://img.shields.io/badge/Swift-6.0%2B-orange?logo=swift)](Package.swift)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue?logo=apple)](Package.swift)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![skills.sh](https://skills.sh/b/yashasg/pdfvision)](https://skills.sh/yashasg/pdfvision)
 
-## Description
+Swift library and CLI that converts digital and scanned PDFs to GitHub-Flavored Markdown on macOS. PDFKit handles digital text; Apple Vision runs OCR on-device. No external OCR service is needed.
 
-Convert once, then let agents request only the sections they need through swift-markdown. In one local book-query eval, this used **80.2% fewer tokens: 12,356 instead of 62,403** for full Markdown, including outline and retrieval overhead while retaining required answer evidence. Counts use `o200k_base`; savings vary by document and query and don't measure native PDF or image billing.
-
-## Benchmark (`pdfvision` vs `anydoc 0.2.4`)
-
-The benchmark compares pdfvision with [`@firecrawl/anydoc` `0.2.4`](https://github.com/firecrawl/anydoc) and MarkItDown on digital PDFs only. OCR stays covered by pdfvision's own tests, outside the head-to-head comparison.
-
-<!-- BENCHMARK:START -->
-Digital-only results are pending a GitHub benchmark run. Previous mixed digital/OCR results have been removed rather than presented as comparable digital-only measurements.
-<!-- BENCHMARK:END -->
-
-GitHub setup installs the pinned competitors in runner-local directories and downloads the pinned [Sinabis 10k corpus](https://huggingface.co/datasets/sinabis-group/sinabis-10k-synthetic-pdf) (CC BY 4.0, Sinabis GmbH). It verifies the archive SHA-256 and selects **6,498 digital PDFs**, excluding simulated scans before evaluation. These bulk downloads and competitor installs are restricted to GitHub Actions.
-
-The **75 generated digital PDFs** have ground truth for quality scoring. The larger business-document corpus measures conversion completion and timing by document type, not Markdown quality scores. PDFs needing OCR fail explicitly because pdfvision runs with OCR disabled. The workflow uploads reports and the generated README as artifacts for review; it does not push to protected `main`.
+Convert once, then let agents request only the sections they need through swift-markdown. One local book-query eval used **80.2% fewer tokens** than full Markdown, including outline and retrieval overhead. [Measurement details](#context-savings).
 
 ## Quick start
 
-### Agent Skill
+### Agent skill
+
+Install the [Agent Skill](https://agentskills.io) so your agent can convert PDFs and retrieve selected sections:
 
 ```bash
 npx skills add yashasg/pdfvision
@@ -50,37 +45,7 @@ pdfvision --batch documents/*.pdf -o markdown/
 
 Batch mode creates the output directory and writes one `.md` file per input, or `.json` with `--json`, in a single process. It refuses to overwrite existing files, rejects duplicate output names, and reports individual failures while continuing with the remaining inputs. A failed batch exits nonzero. Expand directories with a shell glob; batch stdin is not supported.
 
-### Read selected sections
-
-```bash
-pdfvision report.pdf -o report.md
-pdfvision report.md --from-markdown --outline
-pdfvision report.md --from-markdown --section s2
-```
-
-`--outline` returns compact JSON containing section IDs, titles, and heading levels, without document bodies. Use an ID from that outline with `--section`; the result includes its subsections but excludes the next peer or ancestor section. Add `--json` for a compact `{ id, title, level, markdown }` result.
-
-These queries use [swift-markdown](https://github.com/swiftlang/swift-markdown)'s parsed tree locally. Querying saved Markdown avoids repeating PDF extraction or OCR. You can also query a PDF directly with `pdfvision report.pdf --outline` or `--section s2`. Ordinary conversion and batch mode do not parse a Markdown tree.
-
-IDs apply to the unchanged Markdown input, including `s0` for a preamble or a document without headings. Section selection follows the extracted headings and may normalize Markdown formatting. PDF editing and write-back are [future work](https://github.com/yashasg/pdfvision/issues/1).
-
-### Measure context savings locally
-
-Use an eval-only tokenizer environment and an existing Markdown file:
-
-```bash
-python3 -m venv .build/context-eval-env
-.build/context-eval-env/bin/python -m pip install -r scripts/requirements-context.txt
-.build/context-eval-env/bin/python scripts/eval-context.py report.md \
-  --section s2 --encoding o200k_base \
-  --question "What are the payment terms?" --expect "30 days"
-```
-
-The JSON report compares full Markdown with the outline, selected sections, and retrieval-command overhead using the specified tokenizer. Repeat `--section` or `--expect` as needed. Missing answer evidence makes the eval fail, and negative savings are reported unchanged.
-
-Counts apply to the serialized text payloads, not native PDF/image input, provider billing, or automatic section selection. Evidence matching is a substring check, not an LLM answer-quality assessment. Documents stay local; the tokenizer may download its vocabulary on first use. Neither competitor packages nor PDF corpora are needed.
-
-### Swift Package (`PDFMarkdown`)
+### Swift package
 
 Add `pdfvision` to your `Package.swift`. The library product and import remain `PDFMarkdown`:
 
@@ -111,7 +76,70 @@ let outline = context.outline
 let section = try context.section(id: "s2") // Use an ID from outline.
 ```
 
-## PDF test corpus
+## Read selected sections
+
+Convert a PDF once, inspect its outline, then retrieve the section you need:
+
+```bash
+pdfvision report.pdf -o report.md
+pdfvision report.md --from-markdown --outline
+pdfvision report.md --from-markdown --section s2
+```
+
+`--outline` returns section IDs, titles, and heading levels as compact JSON. Use an ID with `--section` to read that section and its subsections, stopping at the next peer or ancestor heading. Add `--json` for `{ id, title, level, markdown }`.
+
+Queries use [swift-markdown](https://github.com/swiftlang/swift-markdown)'s parsed tree locally. Reusing saved Markdown avoids repeating PDF extraction or OCR. You can also query a PDF directly with `pdfvision report.pdf --outline` or `--section s2`; ordinary conversion and batch mode do not parse a Markdown tree.
+
+IDs apply to the same unchanged input. When listed, `s0` selects the preamble or a document without headings. Selection follows the extracted headings and may normalize Markdown formatting. PDF editing and write-back are [future work](https://github.com/yashasg/pdfvision/issues/1).
+
+## Benchmarks
+
+### Context savings
+
+One local book-query eval used **12,356 tokens instead of 62,403 (80.2% fewer)** for full Markdown. That includes the outline and retrieval overhead, with the required answer evidence retained. Counts use `o200k_base`; savings vary by document and query and do not measure native PDF or image billing.
+
+<details>
+<summary>Measure context savings locally</summary>
+
+Use an eval-only tokenizer environment and an existing Markdown file:
+
+```bash
+python3 -m venv .build/context-eval-env
+.build/context-eval-env/bin/python -m pip install -r scripts/requirements-context.txt
+.build/context-eval-env/bin/python scripts/eval-context.py report.md \
+  --section s2 --encoding o200k_base \
+  --question "What are the payment terms?" --expect "30 days"
+```
+
+The JSON report compares full Markdown with the outline, selected sections, and retrieval-command overhead using the specified tokenizer. Repeat `--section` or `--expect` as needed. Missing answer evidence makes the eval fail, and negative savings are reported unchanged.
+
+Counts apply to the serialized text payloads, not native PDF/image input, provider billing, or automatic section selection. Evidence matching is a substring check, not an LLM answer-quality assessment. Documents stay local; the tokenizer may download its vocabulary on first use. Neither competitor packages nor PDF corpora are needed.
+
+</details>
+
+### Digital PDF conversion
+
+The benchmark compares pdfvision with [`@firecrawl/anydoc` `0.2.4`](https://github.com/firecrawl/anydoc) and MarkItDown on digital PDFs only. OCR remains covered by pdfvision's own tests.
+
+<!-- BENCHMARK:START -->
+Digital-only results are available as artifacts from the [benchmark workflow](https://github.com/yashasg/pdfvision/actions/workflows/nightly-eval.yml).
+<!-- BENCHMARK:END -->
+
+<details>
+<summary>Corpus and scoring</summary>
+
+GitHub setup installs the pinned competitors in runner-local directories and downloads the pinned [Sinabis 10k corpus](https://huggingface.co/datasets/sinabis-group/sinabis-10k-synthetic-pdf) (CC BY 4.0, Sinabis GmbH). It verifies the archive SHA-256 and selects **6,498 digital PDFs**, excluding simulated scans. These bulk downloads and competitor installs run only in GitHub Actions.
+
+The **75 generated digital PDFs** have ground truth for quality scoring. The business-document corpus measures conversion completion and timing by document type, without Markdown quality scores. PDFs needing OCR fail explicitly because pdfvision runs with OCR disabled. The workflow uploads reports and the generated README for review; it does not push to protected `main`. Digital-only results do not reuse the previous mixed digital/OCR measurements.
+
+</details>
+
+## Development
+
+<details>
+<summary>PDF corpus and development checks</summary>
+
+### PDF test corpus
 
 The harness includes a pinned manifest of **51 external PDFs** (~5.4 MB including license notices), separate from the synthetic benchmark above. Use Node.js 22+; extraction additionally requires macOS.
 
@@ -136,7 +164,7 @@ Sources: [py-pdf/sample-files](https://github.com/py-pdf/sample-files) (CC BY-SA
 
 These are smoke cases, **not Markdown quality ground truth**: successful extraction does not establish reading order, table fidelity, or multilingual accuracy. Rejections are checked against specific CLI errors; timeouts and crashes fail. The tiny two-glyph `type3-no-unicode` sample currently exposes an extraction gap, so `run` reports it and exits nonzero rather than hiding it. This is broad coverage, not every PDF type; CJK, handwriting, signatures, and very large files remain gaps.
 
-## Development checks
+### Tooling
 
 Tool versions are pinned in [`Mintfile`](Mintfile) and the separate [Danger package](Tools/Danger/Package.swift), which builds the runtime library Danger needs. On macOS, with Node.js/npm installed:
 
@@ -150,6 +178,8 @@ make danger        # Local Danger checks against main
 ```
 
 The code-quality GitHub workflow runs formatting, lint, Swift tests, Periphery, corpus script tests, and PR Danger checks on macOS using the runner's Xcode toolchain. Development tools add no runtime dependencies.
+
+</details>
 
 ## License
 
