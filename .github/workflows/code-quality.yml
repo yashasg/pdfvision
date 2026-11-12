@@ -79,3 +79,14 @@ jobs:
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make danger DANGER_ARGS='ci --text-only --failOnErrors --no-publish-check'
+
+      - name: Diagnose Danger process failures
+        if: failure()
+        run: |
+          if test -f Tools/Danger/.build/debug/danger-swift; then
+            if ! codesign --verify --verbose=4 Tools/Danger/.build/debug/danger-swift; then
+              echo "Danger executable signature verification failed."
+            fi
+            /usr/bin/log show --last 3m --style compact \
+              --predicate 'eventMessage CONTAINS[c] "danger-swift"' | tail -40
+          fi
