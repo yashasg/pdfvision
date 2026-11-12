@@ -138,7 +138,7 @@ These are smoke cases, **not Markdown quality ground truth**: successful extract
 
 ## Development checks
 
-Tool versions are pinned in [`Mintfile`](Mintfile). On macOS, with Node.js/npm installed:
+Tool versions are pinned in [`Mintfile`](Mintfile) and the separate [Danger package](Tools/Danger/Package.swift), which builds the runtime library Danger needs. On macOS, with Node.js/npm installed:
 
 ```bash
 brew install mint

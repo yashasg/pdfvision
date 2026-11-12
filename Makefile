@@ -3,7 +3,7 @@ NPM ?= npm
 SWIFTLINT ?= $(MINT) run SwiftLint
 SWIFTFORMAT ?= $(MINT) run SwiftFormat
 PERIPHERY ?= $(MINT) run periphery
-DANGER_SWIFT ?= $(MINT) run danger/swift danger-swift
+DANGER_ARGS ?= local --base main
 DANGER_JS_VERSION ?= 14.1.0
 PERIPHERY_BUILD_PATH ?= .build/periphery
 
@@ -11,15 +11,16 @@ PERIPHERY_BUILD_PATH ?= .build/periphery
 
 bootstrap:
 	$(MINT) bootstrap
+	swift build --package-path Tools/Danger --product DangerDeps
 
 lint:
 	$(SWIFTLINT) lint
 
 format:
-	$(SWIFTFORMAT) Package.swift Dangerfile.swift Sources Tests
+	$(SWIFTFORMAT) Package.swift Dangerfile.swift Sources Tests Tools/Danger/Package.swift Tools/Danger/Sources
 
 format-check:
-	$(SWIFTFORMAT) --lint Package.swift Dangerfile.swift Sources Tests
+	$(SWIFTFORMAT) --lint Package.swift Dangerfile.swift Sources Tests Tools/Danger/Package.swift Tools/Danger/Sources
 
 unused:
 	@test "$$(uname -s)" = "Darwin" || { \
@@ -35,7 +36,7 @@ unused:
 	$(PERIPHERY) scan --skip-build --index-store-path "$$index_store"
 
 danger:
-	$(NPM) exec --yes --package=danger@$(DANGER_JS_VERSION) -- \
-		$(DANGER_SWIFT) local --base main
+	cd Tools/Danger && $(NPM) exec --yes --package=danger@$(DANGER_JS_VERSION) -- \
+		swift run danger-swift $(DANGER_ARGS) --dangerfile "$(CURDIR)/Dangerfile.swift"
 
 quality: format-check lint

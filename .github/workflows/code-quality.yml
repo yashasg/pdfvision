@@ -28,6 +28,12 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Cache compiled Mint tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.mint
+          key: mint-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Mintfile') }}
+
       - name: Install Mint
         run: |
           mkdir -p .build
@@ -37,7 +43,7 @@ jobs:
           echo "$PWD/.build/mint/.build/release" >> "$GITHUB_PATH"
 
       - name: Check formatting
-        run: mint run SwiftFormat --lint Package.swift Dangerfile.swift Sources Tests
+        run: mint run SwiftFormat --lint Package.swift Dangerfile.swift Sources Tests Tools/Danger/Package.swift Tools/Danger/Sources
 
       - name: Run SwiftLint
         run: mint run SwiftLint lint
@@ -64,7 +70,7 @@ jobs:
           github.event.pull_request.head.repo.full_name == github.repository
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mint run danger/swift danger-swift ci --failOnErrors --no-publish-check
+        run: make danger DANGER_ARGS='ci --failOnErrors --no-publish-check'
 
       - name: Run Danger without publishing for fork
         if: >-
@@ -72,4 +78,4 @@ jobs:
           github.event.pull_request.head.repo.full_name != github.repository
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mint run danger/swift danger-swift ci --text-only --failOnErrors --no-publish-check
+        run: make danger DANGER_ARGS='ci --text-only --failOnErrors --no-publish-check'

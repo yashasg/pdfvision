@@ -3,6 +3,8 @@ included:
   - Dangerfile.swift
   - Sources
   - Tests
+  - Tools/Danger/Package.swift
+  - Tools/Danger/Sources
 
 excluded:
   - .build
