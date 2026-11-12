@@ -6,6 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+  renderBenchmarkChart,
   commonSuccessTiming,
   renderBenchmarkSection,
   replaceBenchmarkSection,
@@ -262,7 +263,63 @@ test('benchmark rendering uses dynamic counts and documents scoring semantics', 
   assert.match(rendered, /External digital completion and timing \(11 PDFs\)/);
   assert.match(rendered, /no matching Markdown ground truth/);
   assert.match(rendered, /8\/11 documents successfully converted by every tool/);
+  assert.match(rendered, /!\[.*\]\(bench\/comparison\.svg\)/);
+  assert.doesNotMatch(rendered, /^\|/m);
   assert.doesNotMatch(rendered, /100 PDFs|four categories|OCR/i);
+});
+
+test('SVG charts preserve measured values, escape text, and show unavailable timing honestly', () => {
+  const tool = 'tool<&"';
+  const syntheticQuality = {
+    documentCount: 7,
+    tools: { [tool]: { score: 80, attempted: 7, succeeded: 6 } },
+    timing: {
+      commonSuccessDocuments: 0,
+      totalDocuments: 7,
+      tools: { [tool]: { commonSuccessMedianMs: null } },
+    },
+  };
+  const render = quality => renderBenchmarkChart({
+    syntheticQuality: quality,
+    externalCompletion: null,
+    updatedAt: '2026-11-11T00:00:00.000Z',
+  });
+  const svg = render(syntheticQuality);
+  assert.match(svg, /80 \/ 100/);
+  assert.match(svg, /85\.7% \(6\/7\)/);
+  assert.match(svg, /not available/);
+  assert.match(svg, /tool&lt;&amp;&quot;/);
+  assert.match(svg, /width="320\.00"/);
+  assert.match(svg, /All bar axes start at zero/);
+  assert.doesNotMatch(svg, /NaN|undefined|<script/);
+  assert.throws(() => render({
+    ...syntheticQuality,
+    tools: { [tool]: { ...syntheticQuality.tools[tool], score: 101 } },
+  }), /Invalid chart value/);
+});
+
+test('completion and speed use the external cohort, not synthetic timings', () => {
+  const svg = renderBenchmarkChart({
+    syntheticQuality: {
+      documentCount: 75,
+      tools: { pdfvision: { score: 98, attempted: 75, succeeded: 75 } },
+      timing: { tools: { pdfvision: { commonSuccessMedianMs: 1 } } },
+    },
+    externalCompletion: {
+      documentCount: 10,
+      tools: { pdfvision: { attempted: 10, succeeded: 9 } },
+      timing: {
+        totalDocuments: 10,
+        commonSuccessDocuments: 8,
+        tools: { pdfvision: { commonSuccessMedianMs: 42.12 } },
+      },
+    },
+    updatedAt: '2026-11-11',
+  });
+  assert.match(svg, /90\.0% \(9\/10\)/);
+  assert.match(svg, /42\.12 ms/);
+  assert.match(svg, /8\/10 common-success external digital PDFs/);
+  assert.match(svg, /75 generated digital PDFs/);
 });
 
 test('benchmark marker replacement is exact and rejects missing markers', () => {

@@ -122,7 +122,13 @@ Counts apply to the serialized text payloads, not native PDF/image input, provid
 The benchmark compares pdfvision with [`@firecrawl/anydoc` `0.2.4`](https://github.com/firecrawl/anydoc) and MarkItDown on digital PDFs only. OCR remains covered by pdfvision's own tests.
 
 <!-- BENCHMARK:START -->
-Digital-only results are available as artifacts from the [benchmark workflow](https://github.com/yashasg/pdfvision/actions/workflows/nightly-eval.yml).
+![Digital PDF benchmark: synthetic quality, conversion completion, and common-success timing](bench/comparison.svg)
+
+Synthetic digital quality (75 PDFs): 3 categories: `digital-2col`, `digital-links`, `digital-single`. Failed or empty conversions receive zero quality points. 75/75 documents successfully converted by every tool.
+
+External digital completion and timing (6498 PDFs): no matching Markdown ground truth, so no quality score. Speed uses the same 5858/6498 documents successfully converted by every tool; failures remain in the completion counts.
+
+[Scores and chart data](bench/latest.json). [Full reports and per-category results](https://github.com/yashasg/pdfvision/actions/runs/43136564753). Measured 2026-11-12. Higher quality/completion is better; lower time is better.
 <!-- BENCHMARK:END -->
 
 <details>

@@ -7,6 +7,7 @@ import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
 
 import {
+  renderBenchmarkChart,
   renderBenchmarkSection,
   replaceBenchmarkSection,
   summarizeExternalCompletion,
@@ -612,6 +613,8 @@ export async function main() {
       updatedAt: new Date().toISOString(),
       runner: os.cpus()[0]?.model || 'unknown',
       mode: 'digital-only',
+      sourceCommit: process.env.GITHUB_SHA,
+      runUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
       tools: {
         pdfvision: 'source',
         anydoc: anydocVersion,
@@ -626,6 +629,19 @@ export async function main() {
         categories: syntheticQuality.categories,
       },
       syntheticQuality,
+      externalCompletion: externalCompletion && {
+        documentCount: externalCompletion.documentCount,
+        categories: externalCompletion.categories,
+        tools: Object.fromEntries(Object.entries(externalCompletion.tools).map(
+          ([tool, { byCategory, ...totals }]) => [tool, totals]
+        )),
+        timing: {
+          totalDocuments: externalCompletion.timing.totalDocuments,
+          commonSuccessDocuments: externalCompletion.timing.commonSuccessDocuments,
+          excludedDocuments: externalCompletion.timing.excludedDocuments,
+          tools: externalCompletion.timing.tools,
+        },
+      },
     };
     const readmePath = path.join(repoRoot, 'README.md');
     const renderedReadme = replaceBenchmarkSection(
@@ -634,12 +650,17 @@ export async function main() {
         syntheticQuality,
         externalCompletion,
         updatedAt: sharedMetadata.updatedAt,
+        runUrl: sharedMetadata.runUrl,
       })
     );
 
     fs.writeFileSync(
       path.join(repoRoot, 'bench/latest.json'),
       `${JSON.stringify(syntheticArtifact, null, 2)}\n`
+    );
+    fs.writeFileSync(
+      path.join(repoRoot, 'bench/comparison.svg'),
+      renderBenchmarkChart({ syntheticQuality, externalCompletion, updatedAt: sharedMetadata.updatedAt })
     );
     if (externalCompletion) {
       const externalArtifact = {

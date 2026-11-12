@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="798" viewBox="0 0 840 798" role="img" aria-labelledby="title description">
+<title id="title">Digital PDF conversion comparison</title>
+<desc id="description">Quality score, pdfvision: 98 / 100. Quality score, anydoc: 61 / 100. Quality score, markitdown: 64 / 100. Conversion completion, pdfvision: 99.3% (6454/6498). Conversion completion, anydoc: 90.7% (5892/6498). Conversion completion, markitdown: 100.0% (6498/6498). Median conversion time, pdfvision: 4.57 ms. Median conversion time, anydoc: 2.42 ms. Median conversion time, markitdown: 59.53 ms. All bar axes start at zero. Speed uses only documents converted by every tool.</desc>
+<style>text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#0f172a}.heading{font-size:20px;font-weight:650}.tool{font-size:16px;font-weight:600}.value{font-size:14px}.note{font-size:13px;fill:#475569}</style>
+<rect width="840" height="798" rx="16" fill="#f8fafc"/>
+<g transform="translate(24 24)">
+<rect width="792" height="226" rx="12" fill="#fff" stroke="#e2e8f0"/>
+<text x="20" y="32" class="heading">Quality score</text>
+<text x="20" y="57" class="note">75 generated digital PDFs - higher is better</text>
+<text x="20" y="105" class="tool">pdfvision</text>
+<rect x="154" y="88" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="88" width="392.00" height="24" rx="4" fill="#2563eb"/>
+<text x="764" y="105" text-anchor="end" class="value">98 / 100</text>
+<text x="20" y="147" class="tool">anydoc</text>
+<rect x="154" y="130" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="130" width="244.00" height="24" rx="4" fill="#7c3aed"/>
+<text x="764" y="147" text-anchor="end" class="value">61 / 100</text>
+<text x="20" y="189" class="tool">markitdown</text>
+<rect x="154" y="172" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="172" width="256.00" height="24" rx="4" fill="#64748b"/>
+<text x="764" y="189" text-anchor="end" class="value">64 / 100</text>
+<text x="154" y="214" class="note">0</text>
+<text x="554" y="214" text-anchor="end" class="note">100.0</text>
+</g>
+<g transform="translate(24 266)">
+<rect width="792" height="226" rx="12" fill="#fff" stroke="#e2e8f0"/>
+<text x="20" y="32" class="heading">Conversion completion</text>
+<text x="20" y="57" class="note">6498 external digital PDFs - nonempty output, not accuracy</text>
+<text x="20" y="105" class="tool">pdfvision</text>
+<rect x="154" y="88" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="88" width="397.29" height="24" rx="4" fill="#2563eb"/>
+<text x="764" y="105" text-anchor="end" class="value">99.3% (6454/6498)</text>
+<text x="20" y="147" class="tool">anydoc</text>
+<rect x="154" y="130" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="130" width="362.70" height="24" rx="4" fill="#7c3aed"/>
+<text x="764" y="147" text-anchor="end" class="value">90.7% (5892/6498)</text>
+<text x="20" y="189" class="tool">markitdown</text>
+<rect x="154" y="172" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="172" width="400.00" height="24" rx="4" fill="#64748b"/>
+<text x="764" y="189" text-anchor="end" class="value">100.0% (6498/6498)</text>
+<text x="154" y="214" class="note">0</text>
+<text x="554" y="214" text-anchor="end" class="note">100.0</text>
+</g>
+<g transform="translate(24 508)">
+<rect width="792" height="226" rx="12" fill="#fff" stroke="#e2e8f0"/>
+<text x="20" y="32" class="heading">Median conversion time</text>
+<text x="20" y="57" class="note">5858/6498 common-success external digital PDFs - lower is better</text>
+<text x="20" y="105" class="tool">pdfvision</text>
+<rect x="154" y="88" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="88" width="30.71" height="24" rx="4" fill="#2563eb"/>
+<text x="764" y="105" text-anchor="end" class="value">4.57 ms</text>
+<text x="20" y="147" class="tool">anydoc</text>
+<rect x="154" y="130" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="130" width="16.27" height="24" rx="4" fill="#7c3aed"/>
+<text x="764" y="147" text-anchor="end" class="value">2.42 ms</text>
+<text x="20" y="189" class="tool">markitdown</text>
+<rect x="154" y="172" width="400" height="24" rx="4" fill="#f1f5f9"/>
+<rect x="154" y="172" width="400.00" height="24" rx="4" fill="#64748b"/>
+<text x="764" y="189" text-anchor="end" class="value">59.53 ms</text>
+<text x="154" y="214" class="note">0</text>
+<text x="554" y="214" text-anchor="end" class="note">59.5</text>
+</g>
+<text x="44" y="778" class="note">Digital only - 2026-11-12. Quality is a synthetic heuristic score, not document accuracy.</text>
+</svg>

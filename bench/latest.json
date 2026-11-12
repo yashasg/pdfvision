@@ -1,8 +1,336 @@
 {
-  "status": "pending",
-  "scope": "digital-only",
-  "reason": "Awaiting a GitHub benchmark run; previous mixed digital/OCR measurements are not reused.",
-  "syntheticDocuments": 75,
-  "categories": ["digital-single", "digital-2col", "digital-links"],
-  "summary": {}
+  "schemaVersion": 2,
+  "updatedAt": "2026-11-12T01:55:34.575Z",
+  "runner": "Apple M1 (Virtual)",
+  "mode": "digital-only",
+  "tools": {
+    "pdfvision": "source",
+    "anydoc": "0.2.4",
+    "markitdown": "0.1.9"
+  },
+  "corpus": {
+    "kind": "synthetic-ground-truth",
+    "documentCount": 75,
+    "categories": [
+      "digital-2col",
+      "digital-links",
+      "digital-single"
+    ]
+  },
+  "syntheticQuality": {
+    "documentCount": 75,
+    "categories": [
+      "digital-2col",
+      "digital-links",
+      "digital-single"
+    ],
+    "tools": {
+      "pdfvision": {
+        "attempted": 75,
+        "succeeded": 75,
+        "failed": 0,
+        "score": 98,
+        "completeness": 94,
+        "structure": 100,
+        "formatting": 96,
+        "cleanliness": 100,
+        "byCategory": {
+          "digital-2col": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 97,
+            "completeness": 89,
+            "structure": 100,
+            "formatting": 100,
+            "cleanliness": 100,
+            "medianMs": 1.232958
+          },
+          "digital-links": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 96,
+            "completeness": 94,
+            "structure": 100,
+            "formatting": 88,
+            "cleanliness": 100,
+            "medianMs": 1.784333
+          },
+          "digital-single": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 100,
+            "completeness": 100,
+            "structure": 100,
+            "formatting": 100,
+            "cleanliness": 100,
+            "medianMs": 1.434334
+          }
+        },
+        "errors": []
+      },
+      "anydoc": {
+        "attempted": 75,
+        "succeeded": 75,
+        "failed": 0,
+        "score": 61,
+        "completeness": 84,
+        "structure": 21,
+        "formatting": 55,
+        "cleanliness": 87,
+        "byCategory": {
+          "digital-2col": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 67,
+            "completeness": 70,
+            "structure": 33,
+            "formatting": 65,
+            "cleanliness": 100,
+            "medianMs": 0.6441669999912847
+          },
+          "digital-links": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 46,
+            "completeness": 81,
+            "structure": 29,
+            "formatting": 0,
+            "cleanliness": 75,
+            "medianMs": 0.8652080000028946
+          },
+          "digital-single": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 71,
+            "completeness": 100,
+            "structure": 0,
+            "formatting": 100,
+            "cleanliness": 85,
+            "medianMs": 0.7907919999852311
+          }
+        },
+        "errors": []
+      },
+      "markitdown": {
+        "attempted": 75,
+        "succeeded": 75,
+        "failed": 0,
+        "score": 64,
+        "completeness": 90,
+        "structure": 0,
+        "formatting": 67,
+        "cleanliness": 100,
+        "byCategory": {
+          "digital-2col": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 72,
+            "completeness": 89,
+            "structure": 0,
+            "formatting": 100,
+            "cleanliness": 100,
+            "medianMs": 28.046708000033505
+          },
+          "digital-links": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 45,
+            "completeness": 81,
+            "structure": 0,
+            "formatting": 0,
+            "cleanliness": 100,
+            "medianMs": 35.93483299999889
+          },
+          "digital-single": {
+            "attempted": 25,
+            "succeeded": 25,
+            "failed": 0,
+            "score": 75,
+            "completeness": 100,
+            "structure": 0,
+            "formatting": 100,
+            "cleanliness": 100,
+            "medianMs": 40.401416000008794
+          }
+        },
+        "errors": []
+      }
+    },
+    "timing": {
+      "totalDocuments": 75,
+      "commonSuccessDocuments": 75,
+      "excludedDocuments": 0,
+      "commonSuccessDocumentIds": [
+        "digital-single_0",
+        "digital-2col_0",
+        "digital-links_0",
+        "digital-single_1",
+        "digital-2col_1",
+        "digital-links_1",
+        "digital-single_2",
+        "digital-2col_2",
+        "digital-links_2",
+        "digital-single_3",
+        "digital-2col_3",
+        "digital-links_3",
+        "digital-single_4",
+        "digital-2col_4",
+        "digital-links_4",
+        "digital-single_5",
+        "digital-2col_5",
+        "digital-links_5",
+        "digital-single_6",
+        "digital-2col_6",
+        "digital-links_6",
+        "digital-single_7",
+        "digital-2col_7",
+        "digital-links_7",
+        "digital-single_8",
+        "digital-2col_8",
+        "digital-links_8",
+        "digital-single_9",
+        "digital-2col_9",
+        "digital-links_9",
+        "digital-single_10",
+        "digital-2col_10",
+        "digital-links_10",
+        "digital-single_11",
+        "digital-2col_11",
+        "digital-links_11",
+        "digital-single_12",
+        "digital-2col_12",
+        "digital-links_12",
+        "digital-single_13",
+        "digital-2col_13",
+        "digital-links_13",
+        "digital-single_14",
+        "digital-2col_14",
+        "digital-links_14",
+        "digital-single_15",
+        "digital-2col_15",
+        "digital-links_15",
+        "digital-single_16",
+        "digital-2col_16",
+        "digital-links_16",
+        "digital-single_17",
+        "digital-2col_17",
+        "digital-links_17",
+        "digital-single_18",
+        "digital-2col_18",
+        "digital-links_18",
+        "digital-single_19",
+        "digital-2col_19",
+        "digital-links_19",
+        "digital-single_20",
+        "digital-2col_20",
+        "digital-links_20",
+        "digital-single_21",
+        "digital-2col_21",
+        "digital-links_21",
+        "digital-single_22",
+        "digital-2col_22",
+        "digital-links_22",
+        "digital-single_23",
+        "digital-2col_23",
+        "digital-links_23",
+        "digital-single_24",
+        "digital-2col_24",
+        "digital-links_24"
+      ],
+      "tools": {
+        "pdfvision": {
+          "attempted": 75,
+          "succeeded": 75,
+          "commonSuccessMedianMs": 1.517041
+        },
+        "anydoc": {
+          "attempted": 75,
+          "succeeded": 75,
+          "commonSuccessMedianMs": 0.8041249999951106
+        },
+        "markitdown": {
+          "attempted": 75,
+          "succeeded": 75,
+          "commonSuccessMedianMs": 34.84483300002239
+        }
+      }
+    }
+  },
+  "sourceCommit": "651158f1a9269962b7de9b800f1209b43c169803",
+  "runUrl": "https://github.com/yashasg/pdfvision/actions/runs/43136564753",
+  "externalCompletion": {
+    "documentCount": 6498,
+    "categories": [
+      "authority_notice",
+      "bank_statement",
+      "certificate",
+      "credit_note",
+      "delivery_note",
+      "dunning",
+      "expense_report",
+      "freight_bill",
+      "hotel_invoice",
+      "insurance_policy",
+      "invoice",
+      "maintenance_report",
+      "order_confirmation",
+      "packing_list",
+      "payslip",
+      "quote",
+      "receipt",
+      "timesheet",
+      "utility_bill",
+      "workshop_invoice"
+    ],
+    "tools": {
+      "pdfvision": {
+        "attempted": 6498,
+        "succeeded": 6454,
+        "failed": 44,
+        "medianMs": 4.810083
+      },
+      "anydoc": {
+        "attempted": 6498,
+        "succeeded": 5892,
+        "failed": 606,
+        "medianMs": 2.4276459999819053
+      },
+      "markitdown": {
+        "attempted": 6498,
+        "succeeded": 6498,
+        "failed": 0,
+        "medianMs": 59.08829150001793
+      }
+    },
+    "timing": {
+      "totalDocuments": 6498,
+      "commonSuccessDocuments": 5858,
+      "excludedDocuments": 640,
+      "tools": {
+        "pdfvision": {
+          "attempted": 6498,
+          "succeeded": 6454,
+          "commonSuccessMedianMs": 4.570146
+        },
+        "anydoc": {
+          "attempted": 6498,
+          "succeeded": 5892,
+          "commonSuccessMedianMs": 2.421979499995359
+        },
+        "markitdown": {
+          "attempted": 6498,
+          "succeeded": 6498,
+          "commonSuccessMedianMs": 59.53237449998028
+        }
+      }
+    }
+  }
 }
